@@ -19,7 +19,7 @@
     </div>
     <nav class="app-nav" aria-label="Primary navigation">
       <button class="nav-btn active" data-section="home"     onclick="showSection('home')">Home</button>
-      <button class="nav-btn"        data-section="narrative" onclick="showSection('narrative')">Narrative</button>
+      <button class="nav-btn"        data-section="narrative" onclick="showSection('narrative'); showNarrativeSection()">Narrative</button>
       <button class="nav-btn"        data-section="jd"        onclick="showSection('jd')">JD Analysis</button>
       <button class="nav-btn"        data-section="tracker"   onclick="showSection('tracker')">Tracker</button>
     </nav>
@@ -36,7 +36,7 @@
       </div>
 
       <div class="home-actions">
-        <button id="start-btn" class="btn btn-primary" onclick="showSection('narrative')">Start my narrative →</button>
+        <button id="start-btn" class="btn btn-primary" onclick="showSection('narrative'); showNarrativeSection()">Start my narrative →</button>
         <button class="btn btn-ghost" onclick="showSection('jd')">Analyze a job posting</button>
       </div>
 
@@ -84,6 +84,7 @@
         <p>Answer the questions. Export your narrative as a Markdown file when done — save it to <code>private/career-narrative.md</code> in the toolkit folder.</p>
       </div>
 
+      <div id="portrait-view" style="display:none;"></div>
       <div id="wizard-container"></div>
 
     </section>

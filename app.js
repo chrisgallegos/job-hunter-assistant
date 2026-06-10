@@ -101,6 +101,144 @@ function saveNarrative() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(narrativeData));
 }
 
+function hasNarrativeContent() {
+  const keys = ['hero','target_roles','projects','arc','transition'];
+  return keys.some(k => narrativeData[k] && narrativeData[k].trim().length > 0);
+}
+
+function showNarrativeSection() {
+  if (hasNarrativeContent()) {
+    renderPortrait();
+  } else {
+    document.getElementById('portrait-view').style.display = 'none';
+    document.getElementById('wizard-container').style.display = 'block';
+    renderWizard();
+  }
+}
+
+function renderPortrait() {
+  const d = narrativeData;
+  const portrait = document.getElementById('portrait-view');
+  const wizard   = document.getElementById('wizard-container');
+
+  wizard.style.display = 'none';
+  portrait.style.display = 'block';
+
+  const metaRows = [
+    ['Target roles',  d.target_roles],
+    ['Seniority',     d.seniority],
+    ['Industries',    d.industries],
+    ['Location',      d.location],
+    ['Salary floor',  d.salary],
+    ['Deal-breakers', d.dealbreakers],
+  ].filter(([,v]) => v && v.trim())
+   .map(([k,v]) => `
+    <div class="portrait-meta-row">
+      <span class="portrait-meta-key">${k}</span>
+      <span class="portrait-meta-val">${escHtml(v)}</span>
+    </div>`).join('');
+
+  const projectBlocks = d.projects
+    ? d.projects.split(/\n{2,}/).filter(p => p.trim()).map(p =>
+        `<div class="portrait-project">${escHtml(p.trim())}</div>`
+      ).join('')
+    : '<div class="portrait-project text-muted">Not yet filled in.</div>';
+
+  portrait.innerHTML = `
+    <div class="portrait">
+
+      ${d.hero ? `
+      <div class="portrait-hero">
+        <div class="portrait-label">Hero statement</div>
+        <p>${escHtml(d.hero)}</p>
+      </div>` : ''}
+
+      ${metaRows ? `
+      <div class="portrait-block">
+        <div class="portrait-label">Looking for</div>
+        <div class="portrait-meta">${metaRows}</div>
+      </div>` : ''}
+
+      ${(d.core_strengths || d.working_knowledge) ? `
+      <div class="portrait-block">
+        <div class="portrait-label">Skills</div>
+        <div class="portrait-skills">
+          ${d.core_strengths ? `
+          <div class="portrait-skills-group">
+            <div class="portrait-skills-group-label">Core strengths</div>
+            <div class="portrait-skills-group-val">${escHtml(d.core_strengths)}</div>
+          </div>` : ''}
+          ${d.working_knowledge ? `
+          <div class="portrait-skills-group">
+            <div class="portrait-skills-group-label">Working knowledge</div>
+            <div class="portrait-skills-group-val">${escHtml(d.working_knowledge)}</div>
+          </div>` : ''}
+        </div>
+      </div>` : ''}
+
+      ${d.projects ? `
+      <div class="portrait-block">
+        <div class="portrait-label">Key projects</div>
+        <div class="portrait-projects">${projectBlocks}</div>
+      </div>` : ''}
+
+      ${d.arc ? `
+      <div class="portrait-block">
+        <div class="portrait-label">Career arc</div>
+        <div class="portrait-body">${escHtml(d.arc)}</div>
+      </div>` : ''}
+
+      ${d.transition ? `
+      <div class="portrait-block">
+        <div class="portrait-label">Transition story</div>
+        <div class="portrait-transition">${escHtml(d.transition)}</div>
+      </div>` : ''}
+
+      ${d.voice ? `
+      <div class="portrait-block">
+        <div class="portrait-label">Voice</div>
+        <div class="portrait-body text-muted">${escHtml(d.voice)}</div>
+      </div>` : ''}
+
+      <div class="portrait-actions">
+        <button class="btn btn-primary" onclick="editNarrative()">Edit or add to this →</button>
+        <button class="btn btn-ghost" onclick="exportNarrativeMD()">Export MD</button>
+        <button class="btn btn-ghost portrait-danger" onclick="confirmRestart()">Start over</button>
+      </div>
+
+    </div>
+  `;
+}
+
+function editNarrative() {
+  document.getElementById('portrait-view').style.display = 'none';
+  document.getElementById('wizard-container').style.display = 'block';
+  currentStep = 0;
+  renderWizard();
+}
+
+function confirmRestart() {
+  if (confirm('Clear your narrative and start over from question 1? This cannot be undone.')) {
+    narrativeData = {};
+    localStorage.removeItem(STORAGE_KEY);
+    currentStep = 0;
+    document.getElementById('portrait-view').style.display = 'none';
+    document.getElementById('wizard-container').style.display = 'block';
+    renderWizard();
+    // Reset home CTA
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) startBtn.textContent = 'Start my narrative →';
+  }
+}
+
+function escHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function renderWizard() {
   const container = document.getElementById('wizard-container');
   container.innerHTML = '';
@@ -432,11 +570,10 @@ document.addEventListener('DOMContentLoaded', () => {
   loadTracker();
   loadJDDraft();
 
-  // Check if there's saved narrative data — update home CTA
-  const hasNarrative = Object.keys(narrativeData).some(k => narrativeData[k]);
-  if (hasNarrative) {
+  // Update home CTA if narrative exists
+  if (hasNarrativeContent()) {
     const startBtn = document.getElementById('start-btn');
-    if (startBtn) startBtn.textContent = 'Continue my narrative →';
+    if (startBtn) startBtn.textContent = 'View my narrative →';
   }
 
   renderWizard();
