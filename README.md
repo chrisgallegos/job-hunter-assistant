@@ -39,16 +39,30 @@ which is gitignored — the system is public, your search is yours.
 
 ## Getting started
 
-1. Clone or download this repo.
-2. Copy `templates/career-narrative.md` into `private/` and fill it out —
-   this is the foundation every other template draws from. (Best done
-   as an excavation interview with your AI — see `docs/methodology.md`.)
-3. Found a posting? Copy `templates/jd-analysis.md` into `private/`,
-   paste the job description in, and work through it (alone or with
-   your AI). If the verdict is apply, the cover letter template picks
-   up where the analysis leaves off.
-4. Log everything in your copy of `templates/application-tracker.md` —
-   the patterns section is where the search learns from itself.
+**Choose how you want to run it — see `docs/setup-and-modes.md` for
+the full guide.**
+
+The short version:
+
+- **Claude Code (CLI):** Start a session from this folder. The AI reads
+  and writes your files directly during the conversation — no
+  copy-paste, no cleanup. Highest fidelity. First-session prompt is
+  in the setup guide.
+- **Chat-based AI (Claude.ai, ChatGPT, Gemini):** Paste your files in,
+  work through the session, copy output back manually. Works anywhere.
+- **No AI:** Follow `docs/facilitator-guide.md` as a self-guided
+  worksheet. The structure does the work.
+
+Then:
+
+1. Build your career narrative first — copy `templates/career-narrative.md`
+   to `private/` and run a session with `docs/facilitator-guide.md` as
+   the guide. This is the foundation everything else draws from.
+2. Found a posting? Copy `templates/jd-analysis.md` to `private/jd-[company]-[role].md`,
+   paste the job description, work through it. Verdict plus angle comes
+   out the other end.
+3. Log everything in `private/tracker.md` — the patterns section is
+   where the search learns from itself.
 
 ## The templates
 
