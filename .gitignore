@@ -1,0 +1,13 @@
+# Your personal job search data — never committed, never published.
+# Everything in private/ is yours alone: career narrative, applications,
+# drafts, research, tracker. The templates/ folder is the publishable system.
+private/*
+!private/README.md
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Scraper output (if you use the optional scraping layer)
+output/
+*.csv
