@@ -26,9 +26,10 @@ Use it at whatever rung suits you. Each one works without the rung above it:
 2. **With your AI collaborator** — point any AI at a template plus your
    career narrative. The "If working with an AI collaborator" section in
    each template tells it how to participate.
-3. **With the scraper** *(optional, coming later)* — a local Python script
-   that pulls postings from job boards into Markdown your AI can read.
-   Runs on your machine. No data sent anywhere.
+3. **With the scraper** *(optional, not yet built — see
+   `ideas/scraper-architecture.md`)* — a local Python script that pulls
+   postings from job boards into Markdown your AI can read. Runs on
+   your machine. No data sent anywhere.
 
 ## What you own
 
@@ -40,15 +41,32 @@ which is gitignored — the system is public, your search is yours.
 
 1. Clone or download this repo.
 2. Copy `templates/career-narrative.md` into `private/` and fill it out —
-   this is the foundation every other template draws from.
+   this is the foundation every other template draws from. (Best done
+   as an excavation interview with your AI — see `docs/methodology.md`.)
 3. Found a posting? Copy `templates/jd-analysis.md` into `private/`,
    paste the job description in, and work through it (alone or with
-   your AI).
+   your AI). If the verdict is apply, the cover letter template picks
+   up where the analysis leaves off.
+4. Log everything in your copy of `templates/application-tracker.md` —
+   the patterns section is where the search learns from itself.
+
+## The templates
+
+| Template | Job |
+|---|---|
+| `career-narrative.md` | The foundation — who you are, your stories, your voice |
+| `jd-analysis.md` | Decode a posting; reach an apply/skip/stretch verdict |
+| `cover-letter.md` | Turn the verdict's angle into a letter in your voice |
+| `company-research.md` | One page that makes you the candidate who did the homework |
+| `interview-prep.md` | Angles, stories, and out-loud rehearsal per interview |
+| `application-tracker.md` | The pulse of the search, and its feedback loop |
 
 ## Structure
 
 ```
 templates/   The system — generic, publishable, yours to adapt
+docs/        Philosophy and methodology — why it works this way
+ideas/       Future components, designed but not built
 private/     Your instance — gitignored, never leaves your machine
 ```
 
