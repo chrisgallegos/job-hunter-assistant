@@ -4,6 +4,37 @@ A portable, self-owned job search system built on plain Markdown files.
 
 **Works with any AI. Works with no AI.**
 
+---
+
+## If you have an AI: hand it this repo
+
+Drop this folder into a conversation with Claude, ChatGPT, Gemini, or
+any capable model and say:
+
+> *"Read the docs/ folder and help me run a job search session."*
+
+That's it. The AI absorbs the instructions and knows what to do — how
+to interview you, how to analyze a job posting, how to update your
+tracker. The docs are written for both you and the AI to read. Nothing
+is hidden in a prompt you can't see.
+
+**Using Claude Code** (Anthropic's local CLI tool)? Even better. Start
+a session from this folder and the AI reads and writes your files
+directly — your career narrative, tracker, and JD analyses update in
+real-time during the conversation. No copy-paste, no cleanup. See
+`docs/setup-and-modes.md` for the exact first-session prompt.
+
+---
+
+## If you don't have an AI: the docs guide you directly
+
+Every template is a human-readable worksheet with clear instructions.
+The `docs/facilitator-guide.md` walks you through each section in
+order — what to write, why it matters, and what to watch out for.
+The structure does the thinking you'd otherwise be doing alone.
+
+---
+
 ## What this is
 
 A structured methodology for running a job search — analysis worksheets,
@@ -12,10 +43,9 @@ Markdown templates you fill out and own.
 
 It is **not** an AI tool. The methodology does the thinking. But every
 template is written to be equally legible to you and to an AI collaborator
-of your choice (Claude, Gemini, GPT, or any capable model), so you can
-delegate the laborious parts — parsing job descriptions, drafting cover
-letters, pattern-matching across postings — while you bring the judgment
-and career context only you have.
+of your choice, so you can delegate the laborious parts — parsing job
+descriptions, drafting cover letters, pattern-matching across postings —
+while you bring the judgment and career context only you have.
 
 ## The ladder
 
