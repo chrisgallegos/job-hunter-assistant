@@ -1,0 +1,455 @@
+// Job Hunter Toolkit — app.js
+// Vanilla JS. No dependencies. Reads/writes localStorage.
+// MD export triggers a browser download dialog.
+
+const STORAGE_KEY = 'jht_narrative';
+const TRACKER_KEY = 'jht_tracker';
+const JD_KEY      = 'jht_jd';
+
+// ─── Navigation ───────────────────────────────────────────
+
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelector(`[data-section="${id}"]`)?.classList.add('active');
+}
+
+// ─── Career Narrative Wizard ───────────────────────────────
+
+const STEPS = [
+  {
+    id: 'target',
+    label: 'Step 1 of 7 — What you want',
+    question: "What kind of role are you looking for?",
+    hint: "Think beyond titles — what does the right job actually feel like? Broad or specialized? Leading a team or individual contributor? Any industries you're drawn to or avoiding?",
+    fields: [
+      { key: 'target_roles',    label: 'Target roles',              type: 'text',     placeholder: 'Senior Designer, Senior Art Director...' },
+      { key: 'seniority',       label: 'Seniority',                 type: 'text',     placeholder: 'Senior IC, open to lead' },
+      { key: 'industries',      label: 'Industries (drawn to / avoiding)', type: 'textarea', placeholder: 'Gaming and entertainment first. Open to agencies...' },
+    ]
+  },
+  {
+    id: 'logistics',
+    label: 'Step 2 of 7 — Logistics',
+    question: "Location, salary, deal-breakers.",
+    hint: "Be honest here — this file is private. Vague targets produce vague searches. Name the salary number you need. Deal-breakers are patterns from past experience, not hypotheticals.",
+    fields: [
+      { key: 'location',      label: 'Location / remote',  type: 'text',     placeholder: 'Remote or Seattle area' },
+      { key: 'salary',        label: 'Salary floor',       type: 'text',     placeholder: '$150k FTE. $110k for gaming specifically.' },
+      { key: 'dealbreakers',  label: 'Deal-breakers',      type: 'textarea', placeholder: 'Micromanaging leadership. Startups without strong experienced leadership...' },
+    ]
+  },
+  {
+    id: 'hero',
+    label: 'Step 3 of 7 — Your hero statement',
+    question: "Who are you professionally, in two sentences?",
+    hint: "Not a job title — the thing underneath the titles. What you're great at, what makes you different. This becomes the spine of every cover letter and the answer to 'tell me about yourself.' Write it, then read it out loud.",
+    fields: [
+      { key: 'hero', label: 'Hero statement', type: 'textarea', placeholder: 'Senior product designer, nearly 20 years, generalist by conviction...' },
+    ]
+  },
+  {
+    id: 'skills',
+    label: 'Step 4 of 7 — Skills inventory',
+    question: "What would you bet on in an interview — and what wouldn't you lead with?",
+    hint: "Two honest lists. Core strengths: things you'd put front and center. Working knowledge: things you can do but wouldn't claim professional-grade. The split matters more than the length.",
+    fields: [
+      { key: 'core_strengths',    label: 'Core strengths',   type: 'textarea', placeholder: 'Visual design leadership, art direction, production discipline...' },
+      { key: 'working_knowledge', label: 'Working knowledge', type: 'textarea', placeholder: 'Motion design, 3D, game engines, illustration...' },
+    ]
+  },
+  {
+    id: 'projects',
+    label: 'Step 5 of 7 — Key projects',
+    question: "What are your 3–6 strongest projects?",
+    hint: "For each one: what was at stake, what was specifically yours, what decision you made and why, what changed because of it. Numbers if you have them. Write loosely — you can refine later.",
+    fields: [
+      { key: 'projects', label: 'Projects (one per paragraph, or bullet per project)', type: 'textarea', placeholder: 'TOYS — Masterbrand, 2024-2026. Designed the GenAI kitchen visualization feature. Account wall conversion 23% → 33%...\n\nAdinovis audit platform — 100+ hour workflow reduced to ~10...' },
+    ]
+  },
+  {
+    id: 'arc',
+    label: 'Step 6 of 7 — Career arc',
+    question: "Walk me through your career — not the resume, the why.",
+    hint: "Each move: what happened, what you chose, what you learned. The moves that need explaining are the ones worth writing down. Layoffs, departures, pivots. Don't apologize — find the honest framing.",
+    fields: [
+      { key: 'arc', label: 'Career arc', type: 'textarea', placeholder: 'Started at Art Institute, first pro role at Provis Media...' },
+    ]
+  },
+  {
+    id: 'transition',
+    label: 'Step 7 of 7 — The transition story',
+    question: "Why are you searching right now?",
+    hint: "One paragraph you can say out loud without flinching. Frame it as movement toward something, not away from something. Add a note on how to calibrate it per audience type if useful.",
+    fields: [
+      { key: 'transition', label: 'Transition story', type: 'textarea', placeholder: 'I was recruited specifically out of [company] by a VP building a team with a clear vision...' },
+      { key: 'voice',      label: 'Voice notes (cover letters + outreach)', type: 'textarea', placeholder: 'Short. Biz casual. Calm confidence. No em dashes — colons instead...' },
+    ]
+  }
+];
+
+let currentStep = 0;
+let narrativeData = {};
+
+function loadNarrative() {
+  try { narrativeData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { narrativeData = {}; }
+}
+
+function saveNarrative() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(narrativeData));
+}
+
+function renderWizard() {
+  const container = document.getElementById('wizard-container');
+  container.innerHTML = '';
+
+  // Progress bar
+  const progress = document.createElement('div');
+  progress.className = 'wizard-progress';
+  STEPS.forEach((_, i) => {
+    const pip = document.createElement('div');
+    pip.className = 'progress-step' + (i < currentStep ? ' done' : i === currentStep ? ' current' : '');
+    progress.appendChild(pip);
+  });
+  container.appendChild(progress);
+
+  // Steps
+  STEPS.forEach((step, i) => {
+    const div = document.createElement('div');
+    div.className = 'wizard-step' + (i === currentStep ? ' active' : '');
+
+    let fieldsHtml = step.fields.map(f => `
+      <div class="field">
+        <label for="field_${f.key}">${f.label}</label>
+        ${f.type === 'textarea'
+          ? `<textarea id="field_${f.key}" name="${f.key}" rows="5" placeholder="${f.placeholder}">${narrativeData[f.key] || ''}</textarea>`
+          : `<input type="text" id="field_${f.key}" name="${f.key}" placeholder="${f.placeholder}" value="${narrativeData[f.key] || ''}">`
+        }
+      </div>
+    `).join('');
+
+    div.innerHTML = `
+      <div class="step-label">${step.label}</div>
+      <div class="step-question">${step.question}</div>
+      <div class="step-hint">${step.hint}</div>
+      ${fieldsHtml}
+      <div class="wizard-actions">
+        <button class="btn btn-ghost" onclick="wizardBack()" ${i === 0 ? 'disabled' : ''}>← Back</button>
+        <div class="wizard-actions-right">
+          <button class="btn btn-ghost btn-sm" onclick="wizardSave()">Save progress</button>
+          ${i < STEPS.length - 1
+            ? `<button class="btn btn-primary" onclick="wizardNext()">Continue →</button>`
+            : `<button class="btn btn-accent" onclick="wizardFinish()">Export narrative →</button>`
+          }
+        </div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function collectCurrentStep() {
+  const step = STEPS[currentStep];
+  step.fields.forEach(f => {
+    const el = document.getElementById(`field_${f.key}`);
+    if (el) narrativeData[f.key] = el.value.trim();
+  });
+  saveNarrative();
+}
+
+function wizardNext() {
+  collectCurrentStep();
+  if (currentStep < STEPS.length - 1) {
+    currentStep++;
+    renderWizard();
+    window.scrollTo(0, 0);
+  }
+}
+
+function wizardBack() {
+  collectCurrentStep();
+  if (currentStep > 0) {
+    currentStep--;
+    renderWizard();
+    window.scrollTo(0, 0);
+  }
+}
+
+function wizardSave() {
+  collectCurrentStep();
+  const btn = event.target;
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => btn.textContent = 'Save progress', 1500);
+}
+
+function wizardFinish() {
+  collectCurrentStep();
+  exportNarrativeMD();
+}
+
+function exportNarrativeMD() {
+  const d = narrativeData;
+  const md = `# Career Narrative
+
+## Hero statement
+
+${d.hero || '[Not yet filled in]'}
+
+## What I'm looking for
+
+- **Target roles:** ${d.target_roles || '[Fill in]'}
+- **Seniority:** ${d.seniority || '[Fill in]'}
+- **Industries:** ${d.industries || '[Fill in]'}
+- **Location / remote:** ${d.location || '[Fill in]'}
+- **Salary floor:** ${d.salary || '[Fill in]'}
+- **Deal-breakers:** ${d.dealbreakers || '[Fill in]'}
+
+## Skills inventory
+
+**Core strengths:** ${d.core_strengths || '[Fill in]'}
+
+**Working knowledge:** ${d.working_knowledge || '[Fill in]'}
+
+## Key projects
+
+${d.projects || '[Fill in — one project per paragraph: context, role, what you did, outcome/metrics]'}
+
+## Career arc
+
+${d.arc || '[Fill in]'}
+
+## The transition story
+
+${d.transition || '[Fill in]'}
+
+## Voice — cover letters and outreach
+
+${d.voice || '[Fill in your voice rules]'}
+
+---
+
+*Generated by Job Hunter Toolkit — https://github.com/[your-handle]/job-hunter-toolkit*
+`;
+  downloadFile('career-narrative.md', md);
+}
+
+// ─── JD Analysis ───────────────────────────────────────────
+
+function runJDAnalysis() {
+  const company  = document.getElementById('jd_company').value.trim();
+  const role     = document.getElementById('jd_role').value.trim();
+  const source   = document.getElementById('jd_source').value.trim();
+  const posting  = document.getElementById('jd_posting').value.trim();
+
+  if (!posting) {
+    alert('Paste the job description first.');
+    return;
+  }
+
+  const filename = `jd-${slugify(company || 'company')}-${slugify(role || 'role')}.md`;
+  const md = `# Job Description Analysis
+
+## The posting
+
+- **Company:** ${company || '[Fill in]'}
+- **Role title:** ${role || '[Fill in]'}
+- **Source / link:** ${source || '[Fill in]'}
+- **Date found:** ${today()}
+
+## Decode the role
+
+- **What they actually need:**
+- **Seniority in practice:**
+- **Red flags:**
+- **Green flags:**
+
+## Match assessment
+
+- **Strong matches:**
+- **Keyword gaps:**
+- **Real gaps:**
+- **Domain match:**
+
+## Decision
+
+- **Verdict:** apply / skip / stretch
+- **Why, in one sentence:**
+- **If applying — the angle:**
+
+---
+
+## Pasted job description
+
+${posting}
+`;
+
+  // Save draft
+  localStorage.setItem(JD_KEY, JSON.stringify({ company, role, source, posting }));
+
+  downloadFile(filename, md);
+}
+
+function loadJDDraft() {
+  try {
+    const d = JSON.parse(localStorage.getItem(JD_KEY)) || {};
+    if (d.company)  document.getElementById('jd_company').value  = d.company;
+    if (d.role)     document.getElementById('jd_role').value     = d.role;
+    if (d.source)   document.getElementById('jd_source').value   = d.source;
+    if (d.posting)  document.getElementById('jd_posting').value  = d.posting;
+  } catch {}
+}
+
+// ─── Tracker ───────────────────────────────────────────────
+
+let trackerData = [];
+
+function loadTracker() {
+  try { trackerData = JSON.parse(localStorage.getItem(TRACKER_KEY)) || []; }
+  catch { trackerData = []; }
+}
+
+function saveTracker() {
+  localStorage.setItem(TRACKER_KEY, JSON.stringify(trackerData));
+}
+
+function renderTracker() {
+  const tbody = document.getElementById('tracker-body');
+  const empty = document.getElementById('tracker-empty');
+
+  if (trackerData.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+  tbody.innerHTML = trackerData.map((r, i) => `
+    <tr>
+      <td><strong>${r.company || '—'}</strong></td>
+      <td>${r.role || '—'}</td>
+      <td>${r.channel || '—'}</td>
+      <td>${r.applied || '—'}</td>
+      <td><span class="status-pill">${r.status || 'researching'}</span></td>
+      <td>${r.next || '—'}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="editEntry(${i})">Edit</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openAddModal(editIndex = null) {
+  const modal = document.getElementById('entry-modal');
+  const entry = editIndex !== null ? trackerData[editIndex] : {};
+
+  document.getElementById('modal-title').textContent = editIndex !== null ? 'Edit application' : 'Add application';
+  document.getElementById('entry_company').value  = entry.company  || '';
+  document.getElementById('entry_role').value     = entry.role     || '';
+  document.getElementById('entry_channel').value  = entry.channel  || '';
+  document.getElementById('entry_applied').value  = entry.applied  || today();
+  document.getElementById('entry_status').value   = entry.status   || 'researching';
+  document.getElementById('entry_next').value     = entry.next     || '';
+  document.getElementById('entry_notes').value    = entry.notes    || '';
+  document.getElementById('entry-modal').dataset.editIndex = editIndex ?? '';
+
+  modal.classList.add('open');
+}
+
+function editEntry(i) { openAddModal(i); }
+
+function closeModal() {
+  document.getElementById('entry-modal').classList.remove('open');
+}
+
+function saveEntry() {
+  const editIndex = document.getElementById('entry-modal').dataset.editIndex;
+  const entry = {
+    company: document.getElementById('entry_company').value.trim(),
+    role:    document.getElementById('entry_role').value.trim(),
+    channel: document.getElementById('entry_channel').value.trim(),
+    applied: document.getElementById('entry_applied').value.trim(),
+    status:  document.getElementById('entry_status').value.trim(),
+    next:    document.getElementById('entry_next').value.trim(),
+    notes:   document.getElementById('entry_notes').value.trim(),
+  };
+
+  if (editIndex !== '') {
+    trackerData[parseInt(editIndex)] = entry;
+  } else {
+    trackerData.push(entry);
+  }
+
+  saveTracker();
+  renderTracker();
+  closeModal();
+}
+
+function exportTrackerMD() {
+  if (trackerData.length === 0) { alert('No applications logged yet.'); return; }
+
+  const rows = trackerData.map(r =>
+    `| ${r.company} | ${r.role} | ${r.channel} | ${r.applied} | ${r.status} | ${r.next} |`
+  ).join('\n');
+
+  const md = `# Application Tracker
+
+| Company | Role | Channel | Applied | Status | Next action |
+|---|---|---|---|---|---|
+${rows}
+
+---
+*Exported ${today()} from Job Hunter Toolkit*
+`;
+  downloadFile('tracker.md', md);
+}
+
+// ─── Utilities ─────────────────────────────────────────────
+
+function downloadFile(filename, content) {
+  const blob = new Blob([content], { type: 'text/markdown' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function slugify(str) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+// ─── Init ───────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadNarrative();
+  loadTracker();
+  loadJDDraft();
+
+  // Check if there's saved narrative data — update home CTA
+  const hasNarrative = Object.keys(narrativeData).some(k => narrativeData[k]);
+  if (hasNarrative) {
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) startBtn.textContent = 'Continue my narrative →';
+  }
+
+  renderWizard();
+  renderTracker();
+  showSection('home');
+
+  // Close modal on backdrop click
+  document.getElementById('entry-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // Escape key closes modal
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+});

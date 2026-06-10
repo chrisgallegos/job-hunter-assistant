@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "job-hunter-toolkit",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4242", "--directory", "/Users/chris/Sites/job-hunter-toolkit"],
+      "port": 4242
+    }
+  ]
+}
