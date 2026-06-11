@@ -1,6 +1,11 @@
 # Scraping Layer — Architecture Notes
 
-**Status:** idea, not built. The toolkit works fully without it.
+**Status:** built June 2026 — see `scraper/`. This doc is the original
+design sketch, kept for the reasoning. Differences from the sketch:
+output lands in `private/jobs/` (with the rest of your instance) rather
+than `scraper/output/`; a `private/watchlist.md` file drives which
+companies are scraped and what counts as relevant; postings get a
+keyword relevance score in a daily digest. Workday deferred as planned.
 
 A simple local Python script that pulls job postings from the major ATS
 platforms — Greenhouse, Lever, Workday, Ashby — plus individual company

@@ -11,3 +11,4 @@ Thumbs.db
 # Scraper output (if you use the optional scraping layer)
 output/
 *.csv
+__pycache__/

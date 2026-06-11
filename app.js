@@ -373,6 +373,182 @@ ${d.voice || '[Fill in your voice rules]'}
   downloadFile('career-narrative.md', md);
 }
 
+// ─── Jobs (scraper view) ───────────────────────────────────
+// Talks to serve.py's API. Without the server (file:// or plain static
+// hosting) the section degrades to instructions for starting it.
+
+let jobsData = [];
+let jobsInitialized = false;
+
+async function initJobs() {
+  if (jobsInitialized) return;
+  try {
+    const resp = await fetch('/api/jobs');
+    if (!resp.ok) throw new Error(resp.status);
+    const data = await resp.json();
+    jobsInitialized = true;
+    jobsData = data.postings || [];
+    renderJobs(data.generated
+      ? `Last scan: ${data.generated} — ${jobsData.length} posting(s).`
+      : 'No scans yet. Hit "Scan now" to pull fresh postings.');
+    loadWatchlistText();
+  } catch {
+    document.getElementById('jobs-offline').style.display = 'block';
+    document.getElementById('scan-btn').disabled = true;
+  }
+}
+
+async function runScan() {
+  const btn = document.getElementById('scan-btn');
+  const status = document.getElementById('jobs-status');
+  btn.disabled = true;
+  btn.textContent = 'Scanning…';
+  status.textContent = 'Checking company boards — this takes a moment; the scraper is polite to their APIs.';
+  try {
+    const resp = await fetch('/api/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        days: parseInt(document.getElementById('scan-days').value, 10),
+        rescan: document.getElementById('scan-rescan').checked,
+      }),
+    });
+    const data = await resp.json();
+    if (data.error) {
+      renderJobs(data.error);
+    } else {
+      jobsData = data.postings || [];
+      renderJobs(data.new > 0
+        ? `${data.new} new matching posting(s). Saved to private/jobs/.`
+        : 'No new matching postings in that window. Widen the days, tick "include seen," or add companies to the watchlist.');
+    }
+  } catch {
+    renderJobs('Scan failed — is the server still running?');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Scan now →';
+}
+
+function combinedScore(j) {
+  return j.score + (j.verdict ? j.verdict.delta : 0);
+}
+
+function scoreChip(j) {
+  if (!j.verdict || j.verdict.delta === 0) {
+    const note = j.verdict
+      ? `Keyword score ${j.score}. Your AI reviewed it: ${j.verdict.why || 'neutral — keywords tell the story.'}`
+      : 'Keyword score from your watchlist. Run your AI over private/jobs/review-queue.md to add a judgment layer.';
+    return `<span class="job-score" title="${escHtml(note)}">${j.score}${j.verdict ? '·0' : ''}</span>`;
+  }
+  const d = j.verdict.delta;
+  const cls = d > 0 ? 'up' : 'down';
+  const sign = d > 0 ? '+' : '−';
+  const note = `Keyword score ${j.score}, ${sign}${Math.abs(d)} from your AI: ${j.verdict.why}`;
+  return `<span class="job-score" title="${escHtml(note)}">${j.score}<em class="job-score-delta ${cls}">${sign}${Math.abs(d)}</em></span>`;
+}
+
+function renderJobs(statusMsg) {
+  document.getElementById('jobs-status').textContent = statusMsg || '';
+  jobsData.sort((a, b) => combinedScore(b) - combinedScore(a));
+  const list = document.getElementById('jobs-list');
+  list.innerHTML = jobsData.map((j, i) => `
+    <div class="job-card">
+      <div class="job-card-head">
+        <div>
+          <div class="job-card-title">${escHtml(j.title)}</div>
+          <div class="job-card-company">${escHtml(j.company)}${j.department ? ' · ' + escHtml(j.department) : ''}</div>
+        </div>
+        ${scoreChip(j)}
+      </div>
+      ${j.verdict && j.verdict.why ? `<div class="job-card-verdict">${escHtml(j.verdict.why)}</div>` : ''}
+      <div class="job-card-meta">
+        <span>${escHtml(j.location || 'Location not listed')}${j.remote ? ' · remote' : ''}</span>
+        <span>${j.posted ? 'Posted ' + j.posted : 'Undated'} · ${j.source}</span>
+      </div>
+      <div class="job-card-actions">
+        <button class="btn btn-primary btn-sm" onclick="analyzeJob(${i})">Analyze →</button>
+        <button class="btn btn-ghost btn-sm" onclick="trackJob(${i})">Track</button>
+        <a class="btn btn-ghost btn-sm" href="${escHtml(j.url)}" target="_blank" rel="noopener">View posting ↗</a>
+        <button class="btn btn-ghost btn-sm job-dismiss" onclick="dismissJob(${i})">Dismiss</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Dismissals teach the system: the reason lands in
+// private/jobs/learnings.md and the posting never resurfaces.
+async function dismissJob(i) {
+  const j = jobsData[i];
+  const reason = prompt('Why skip it? One short reason — this builds your learnings file.\n(Leave blank to dismiss without one.)');
+  if (reason === null) return; // cancelled
+  try {
+    await fetch('/api/dismiss', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: j.url, title: j.title, company: j.company, reason }),
+    });
+    jobsData.splice(i, 1);
+    renderJobs(`Dismissed. ${reason ? 'Reason logged to learnings.md.' : ''} ${jobsData.length} posting(s) left.`);
+  } catch {
+    renderJobs('Dismiss failed — is the server running?');
+  }
+}
+
+// Bridge: scraped posting → JD Analysis form, prefilled.
+function analyzeJob(i) {
+  const j = jobsData[i];
+  document.getElementById('jd_company').value = j.company;
+  document.getElementById('jd_role').value    = j.title;
+  document.getElementById('jd_source').value  = j.url;
+  document.getElementById('jd_posting').value = j.description || '';
+  showSection('jd');
+  window.scrollTo(0, 0);
+}
+
+// Bridge: scraped posting → tracker modal, prefilled.
+function trackJob(i) {
+  const j = jobsData[i];
+  openAddModal();
+  document.getElementById('entry_company').value = j.company;
+  document.getElementById('entry_role').value    = j.title;
+  document.getElementById('entry_channel').value = 'cold';
+  document.getElementById('entry_status').value  = 'researching';
+  document.getElementById('entry_notes').value   = `Found by scraper ${j.posted ? '(posted ' + j.posted + ')' : ''}. ${j.url}`;
+}
+
+// Watchlist editor — edits private/watchlist.md through the server.
+async function loadWatchlistText() {
+  try {
+    const resp = await fetch('/api/watchlist');
+    const data = await resp.json();
+    document.getElementById('watchlist-text').value = data.text || '';
+  } catch {}
+}
+
+function toggleWatchlist() {
+  const editor = document.getElementById('watchlist-editor');
+  const open = editor.style.display !== 'none';
+  editor.style.display = open ? 'none' : 'block';
+  document.getElementById('watchlist-toggle').textContent =
+    open ? 'Edit watchlist ▸' : 'Edit watchlist ▾';
+}
+
+async function saveWatchlist() {
+  const status = document.getElementById('watchlist-status');
+  try {
+    const resp = await fetch('/api/watchlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: document.getElementById('watchlist-text').value }),
+    });
+    const data = await resp.json();
+    status.textContent = data.saved ? 'Saved ✓ — next scan uses it.' : (data.error || 'Save failed.');
+  } catch {
+    status.textContent = 'Save failed — is the server running?';
+  }
+  setTimeout(() => status.textContent = '', 3000);
+}
+
 // ─── JD Analysis ───────────────────────────────────────────
 
 function runJDAnalysis() {

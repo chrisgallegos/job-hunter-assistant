@@ -4,8 +4,9 @@
     {
       "name": "job-hunter-toolkit",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "4242", "--directory", "/Users/chris/Sites/job-hunter-toolkit"],
-      "port": 4242
+      "runtimeArgs": ["serve.py", "--no-browser"],
+      "port": 4242,
+      "autoPort": true
     }
   ]
 }

@@ -56,10 +56,13 @@ Use it at whatever rung suits you. Each one works without the rung above it:
 2. **With your AI collaborator** — point any AI at a template plus your
    career narrative. The "If working with an AI collaborator" section in
    each template tells it how to participate.
-3. **With the scraper** *(optional, not yet built — see
-   `ideas/scraper-architecture.md`)* — a local Python script that pulls
-   postings from job boards into Markdown your AI can read. Runs on
-   your machine. No data sent anywhere.
+3. **With the scraper** *(optional — see `scraper/`)* — a local Python
+   script that pulls fresh postings straight from public ATS APIs
+   (Greenhouse, Lever, Ashby) for the companies you watch, filters them
+   against your criteria, and writes a relevance-scored digest your AI
+   can read. Standard library only. Runs on your machine. No data sent
+   anywhere. Copy `scraper/watchlist.example.md` to
+   `private/watchlist.md`, then `python3 scraper/scrape.py`.
 
 ## What you own
 

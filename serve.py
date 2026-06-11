@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+"""Job Hunter Toolkit — thin local server.
+
+Serves the interactive app (index.html) and gives it hands: the scraper
+runs on demand and the watchlist is editable from the browser. The MD
+files in private/ stay the single source of truth — this server is a
+view over them, never a replacement.
+
+Local only: binds 127.0.0.1, serves nothing to your network, sends
+nothing anywhere. Standard library only.
+
+Usage:
+  python3 serve.py            # http://localhost:8765
+  python3 serve.py --port N
+"""
+
+import argparse
+import json
+import os
+import sys
+import webbrowser
+from datetime import date
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "scraper"))
+import scrape  # noqa: E402  (scraper/scrape.py)
+
+
+def with_verdicts(latest):
+    """Fold AI verdicts (private/jobs/verdicts.json — written by your
+    AI collaborator from the review queue) into the postings payload."""
+    if not scrape.VERDICTS_FILE.exists():
+        return latest
+    try:
+        verdicts = json.loads(scrape.VERDICTS_FILE.read_text())
+    except json.JSONDecodeError:
+        return latest
+    for posting in latest.get("postings", []):
+        verdict = verdicts.get(posting.get("url"))
+        if isinstance(verdict, dict) and "delta" in verdict:
+            posting["verdict"] = {
+                "delta": max(-3, min(3, int(verdict["delta"]))),
+                "why": str(verdict.get("why", ""))[:200],
+            }
+    return latest
+
+
+def append_learning(today, body, reason):
+    """Dismissals accumulate in learnings.md — the raw material the
+    search learns from. Periodically hand it to your AI: 'read my
+    learnings and suggest watchlist edits.'"""
+    if not scrape.LEARNINGS_FILE.exists():
+        scrape.LEARNINGS_FILE.write_text(
+            "# Learnings — dismissed postings\n\n"
+            "> Every dismissal lands here with its reason. This file is\n"
+            "> the search learning from itself: when a pattern repeats,\n"
+            "> it belongs in the watchlist. Periodically ask your AI to\n"
+            "> read this plus private/watchlist.md and propose edits —\n"
+            "> new title excludes, department excludes, or boost changes.\n\n"
+        )
+    entry = (
+        f"- {today} — {body.get('title', '?')} — {body.get('company', '?')}"
+        + (f" — \"{reason}\"" if reason else " — no reason given")
+        + f"\n  {body.get('url', '')}\n"
+    )
+    with scrape.LEARNINGS_FILE.open("a") as handle:
+        handle.write(entry)
+
+
+class Handler(SimpleHTTPRequestHandler):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=str(ROOT), **kwargs)
+
+    # ── API ──────────────────────────────────────────────────
+
+    def do_GET(self):
+        if self.path == "/api/jobs":
+            latest = scrape.JOBS_DIR / "latest.json"
+            if latest.exists():
+                return self.send_json(with_verdicts(json.loads(latest.read_text())))
+            return self.send_json({"generated": None, "postings": []})
+
+        if self.path == "/api/watchlist":
+            if scrape.WATCHLIST.exists():
+                return self.send_json({"text": scrape.WATCHLIST.read_text()})
+            return self.send_json(
+                {"text": scrape.EXAMPLE_WATCHLIST.read_text(), "example": True}
+            )
+
+        # Static files — but private/ is never served over HTTP.
+        # The API above exposes exactly what the app needs, nothing more.
+        if self.path.startswith("/private"):
+            return self.send_error(403, "private/ is not served")
+        return super().do_GET()
+
+    def do_POST(self):
+        length = int(self.headers.get("Content-Length", 0))
+        try:
+            body = json.loads(self.rfile.read(length) or b"{}")
+        except json.JSONDecodeError:
+            return self.send_error(400, "invalid JSON")
+
+        if self.path == "/api/scrape":
+            log = []
+            try:
+                results = scrape.scan(
+                    days=int(body.get("days", 7)),
+                    rescan=bool(body.get("rescan", False)),
+                    log=log.append,
+                )
+            except scrape.WatchlistError as err:
+                return self.send_json({"error": str(err), "log": log}, 400)
+            latest = json.loads((scrape.JOBS_DIR / "latest.json").read_text())
+            latest["log"] = log
+            latest["new"] = len(results)
+            return self.send_json(with_verdicts(latest))
+
+        if self.path == "/api/dismiss":
+            url = body.get("url", "")
+            if not url:
+                return self.send_json({"error": "no url"}, 400)
+            dismissed = (
+                json.loads(scrape.DISMISSED_FILE.read_text())
+                if scrape.DISMISSED_FILE.exists() else {}
+            )
+            today = date.today().isoformat()
+            reason = (body.get("reason") or "").strip()
+            dismissed[url] = {"date": today, "reason": reason}
+            scrape.JOBS_DIR.mkdir(parents=True, exist_ok=True)
+            scrape.DISMISSED_FILE.write_text(json.dumps(dismissed, indent=1))
+            append_learning(today, body, reason)
+            return self.send_json({"dismissed": True})
+
+        if self.path == "/api/watchlist":
+            text = body.get("text", "")
+            if not text.strip():
+                return self.send_json({"error": "watchlist is empty"}, 400)
+            scrape.WATCHLIST.parent.mkdir(parents=True, exist_ok=True)
+            scrape.WATCHLIST.write_text(text)
+            return self.send_json({"saved": True})
+
+        return self.send_error(404)
+
+    # ── plumbing ─────────────────────────────────────────────
+
+    def send_json(self, payload, status=200):
+        data = json.dumps(payload).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def log_message(self, fmt, *args):
+        if "/api/" in (args[0] if args else ""):
+            super().log_message(fmt, *args)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--port", type=int,
+                        default=int(os.environ.get("PORT", 8765)))
+    parser.add_argument("--no-browser", action="store_true",
+                        help="don't open the browser automatically")
+    args = parser.parse_args()
+
+    server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
+    url = f"http://localhost:{args.port}"
+    print(f"Job Hunter Toolkit running at {url}  (Ctrl+C to stop)")
+    if not args.no_browser:
+        webbrowser.open(url)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nStopped.")
+
+
+if __name__ == "__main__":
+    main()
