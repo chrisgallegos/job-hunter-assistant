@@ -180,6 +180,28 @@ def score(posting, criteria):
     return points
 
 
+# Source hierarchy: free platforms > paid feeds.
+# When the same job appears on multiple sources, prefer the free version.
+SOURCE_COST = {
+    "greenhouse": 0,
+    "lever": 0,
+    "ashby": 0,
+    "remotive": 1,
+    "weworkremotely": 1,
+    "remoteok": 2,  # pay-to-play; deprioritize
+}
+
+
+def posting_dedup_key(posting):
+    """Normalize company + title for cross-source dedup.
+    Two postings with the same key are considered the same role."""
+    co = posting["company"].lower().strip()
+    ti = posting["title"].lower().strip()
+    # Remove common qualifiers
+    ti = ti.replace("(contract)", "").replace("(part-time)", "").strip()
+    return f"{co}|{ti}"
+
+
 def parse_posted(posting):
     raw = posting.get("posted")
     if not raw:
@@ -434,6 +456,25 @@ def scan(days=7, rescan=False, company=None, source=None, log=None):
         log(f"{label}: {len(postings)} postings")
         consider(postings)
 
+    # Dedup across sources: keep the free version when the same job
+    # surfaces on multiple platforms.
+    deduped = {}  # key -> (posting, points)
+    for posting, points in fresh:
+        key = posting_dedup_key(posting)
+        if key in deduped:
+            existing_posting, existing_points = deduped[key]
+            existing_cost = SOURCE_COST.get(existing_posting["source"], 99)
+            new_cost = SOURCE_COST.get(posting["source"], 99)
+            # Prefer lower cost (free > remotive > remoteok)
+            # Tiebreak: keep higher score
+            if new_cost < existing_cost or (
+                new_cost == existing_cost and points > existing_points
+            ):
+                deduped[key] = (posting, points)
+        else:
+            deduped[key] = (posting, points)
+
+    fresh = list(deduped.values())
     fresh.sort(key=lambda pair: (-pair[1], pair[0]["title"]))
     results = []
     for posting, points in fresh:
