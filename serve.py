@@ -83,6 +83,11 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.send_json(with_verdicts(json.loads(latest.read_text())))
             return self.send_json({"generated": None, "postings": []})
 
+        if self.path == "/api/verdicts":
+            if scrape.VERDICTS_FILE.exists():
+                return self.send_json(json.loads(scrape.VERDICTS_FILE.read_text()))
+            return self.send_json({})
+
         if self.path == "/api/watchlist":
             if scrape.WATCHLIST.exists():
                 return self.send_json({"text": scrape.WATCHLIST.read_text()})
@@ -155,7 +160,7 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(data)
 
     def log_message(self, fmt, *args):
-        if "/api/" in (args[0] if args else ""):
+        if args and isinstance(args[0], str) and "/api/" in args[0]:
             super().log_message(fmt, *args)
 
 

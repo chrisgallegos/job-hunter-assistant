@@ -379,15 +379,30 @@ ${d.voice || '[Fill in your voice rules]'}
 
 let jobsData = [];
 let jobsInitialized = false;
+let verdicts = {};
 
 async function initJobs() {
   if (jobsInitialized) return;
   try {
-    const resp = await fetch('/api/jobs');
-    if (!resp.ok) throw new Error(resp.status);
-    const data = await resp.json();
+    const [jobsResp, verdictsResp] = await Promise.all([
+      fetch('/api/jobs'),
+      fetch('/api/verdicts'),
+    ]);
+    if (!jobsResp.ok) throw new Error(jobsResp.status);
+    const data = await jobsResp.json();
     jobsInitialized = true;
     jobsData = data.postings || [];
+
+    // Load verdicts and merge into each posting
+    if (verdictsResp.ok) {
+      verdicts = await verdictsResp.json();
+      jobsData.forEach(posting => {
+        if (verdicts[posting.url]) {
+          posting.verdict = verdicts[posting.url];
+        }
+      });
+    }
+
     renderJobs(data.generated
       ? `Last scan: ${data.generated} — ${jobsData.length} posting(s).`
       : 'No scans yet. Hit "Scan now" to pull fresh postings.');
