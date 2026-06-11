@@ -74,10 +74,22 @@ Every dismissal you make (with a one-word reason) lands here. Periodically ask y
 
 The AI replies with: "5 dismissals mention 'gameplay' — add to department excludes. Add 'sales' to title excludes." You edit the watchlist, next scan is smarter.
 
+**AI coding assistant: the zero-copy-paste path**
+
+Any AI coding assistant that runs in your project directory — Claude Code, Cursor, Windsurf, GitHub Copilot, Zed AI, or similar — can close the verdict loop without copy-paste. Because it already has file access, you just ask:
+
+```
+"Read private/jobs/review-queue.md and private/career-narrative.md,
+judge each posting for fit beyond keywords, and write verdicts to
+private/jobs/verdicts.json."
+```
+
+The assistant reads your narrative, evaluates each posting, and writes the file directly — no separate chat window, no API key, no manual JSON. The toolkit is designed around this: files are the interface, and any tool that can read and write files works.
+
 **Why files, not APIs?**
 - Portable: fork the repo, run on your machine, zero cloud dependency
 - Transparent: read/edit/understand every file with a text editor
-- Multi-AI: use Claude, GPT, Gemini, or any model — same contract
+- AI-agnostic: works with any assistant that has local file access, or via copy-paste in a chat window — same file contract either way
 - Auditable: git history shows how the system learned over time
 
 ---
@@ -113,7 +125,22 @@ python3 serve.py  # Local server, http://localhost:8765
 - Scraper pulls fresh postings from 6 sources every day (or on demand)
 - App shows a live digest, scored and filtered by your watchlist
 - One-click Analyze/Track/Dismiss
-- AI review queue is written automatically; hand it to your AI monthly for verdict pass
+
+**Verdict loop — three options, same output:**
+
+**a) AI coding assistant (zero friction)**
+Open this project in any AI coding assistant with local file access (Claude Code, Cursor, Windsurf, Copilot, etc.) and say:
+> *"Read private/jobs/review-queue.md and private/career-narrative.md, judge each posting for fit, and write verdicts to private/jobs/verdicts.json."*
+The assistant reads both files, reasons against your narrative, and writes the verdicts directly. No copy-paste, no extra chat window, no API key.
+
+**b) Chat-based (Claude, GPT, Gemini, or any)**
+1. Copy the contents of `private/jobs/review-queue.md`
+2. Paste into a chat session alongside your career narrative
+3. Ask the AI to produce a verdicts JSON block
+4. Save the output as `private/jobs/verdicts.json`
+
+**c) Skip verdicts entirely**
+The keyword score alone is useful. Verdicts are an optional layer, not a requirement.
 
 ---
 
@@ -186,7 +213,7 @@ python3 serve.py  # Local server, http://localhost:8765
 1. Scraper → pulls from public job boards (Greenhouse, Lever, Ashby, Remotive, RemoteOK, WeWorkRemotely)
 2. Server → local only, binds 127.0.0.1, never broadcasts
 3. App → reads/writes your private/ folder via the server
-4. Your AI → you hand it files, it hands you verdicts.json back (no API, no account)
+4. Your AI → reads/writes `private/` directly (AI coding assistant) or via copy-paste (chat) — same file contract either way, no API account required
 
 **LinkedIn deliberately excluded:**
 - No public job API available; unofficial scraping violates ToS and is technically fragile
@@ -280,7 +307,9 @@ The toolkit is not a platform; it's a starting point. Fork it, break it, rebuild
 ### Prerequisites
 - Python 3.6+
 - A text editor (any will do)
-- (Optional) An AI collaborator — Claude, ChatGPT, Gemini, etc.
+- (Optional) An AI collaborator — two modes, same file contract:
+  - **AI coding assistant** — any tool that runs in your project directory (Claude Code, Cursor, Windsurf, GitHub Copilot, Zed AI, etc.) reads and writes `private/` directly. Zero copy-paste.
+  - **Chat-based** — Claude, ChatGPT, Gemini, or any chat UI. Copy `review-queue.md`, paste in the AI's response as `verdicts.json`. Takes an extra step but works anywhere.
 
 ### Step 1: Set up your narrative
 ```bash

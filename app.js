@@ -448,46 +448,95 @@ function combinedScore(j) {
   return j.score + (j.verdict ? j.verdict.delta : 0);
 }
 
-function scoreChip(j) {
-  if (!j.verdict || j.verdict.delta === 0) {
-    const note = j.verdict
-      ? `Keyword score ${j.score}. Your AI reviewed it: ${j.verdict.why || 'neutral — keywords tell the story.'}`
-      : 'Keyword score from your watchlist. Run your AI over private/jobs/review-queue.md to add a judgment layer.';
-    return `<span class="job-score" title="${escHtml(note)}">${j.score}${j.verdict ? '·0' : ''}</span>`;
+// AI-FLAVOR: the verdict attribution label is "your AI says" — change it to match
+// your assistant's name or voice. Search this file for "your AI says" to find it.
+// Examples: "Claude thinks", "Gemini's take", "GPT says", "your assistant says".
+function scoreCol(j) {
+  const note = j.verdict && j.verdict.why
+    ? `Keyword score ${j.score}${j.verdict.delta ? `, ${j.verdict.delta > 0 ? '+' : '−'}${Math.abs(j.verdict.delta)} from your AI` : ''}: ${j.verdict.why}`
+    : 'Keyword score from your watchlist. Run your AI over private/jobs/review-queue.md to add a judgment layer.';
+
+  let deltaHtml = '';
+  if (j.verdict && j.verdict.delta !== 0) {
+    const d = j.verdict.delta;
+    const cls = d > 0 ? 'up' : 'down';
+    const sign = d > 0 ? '+' : '−';
+    deltaHtml = `<em class="job-score-delta ${cls}">${sign}${Math.abs(d)}</em>`;
   }
-  const d = j.verdict.delta;
-  const cls = d > 0 ? 'up' : 'down';
-  const sign = d > 0 ? '+' : '−';
-  const note = `Keyword score ${j.score}, ${sign}${Math.abs(d)} from your AI: ${j.verdict.why}`;
-  return `<span class="job-score" title="${escHtml(note)}">${j.score}<em class="job-score-delta ${cls}">${sign}${Math.abs(d)}</em></span>`;
+
+  return `<div class="job-score-col" title="${escHtml(note)}">
+    <span class="job-score-num">${j.score}</span>
+    ${deltaHtml}
+  </div>`;
+}
+
+function extractExcerpt(desc) {
+  if (!desc) return null;
+  // Split into paragraphs, skip short/boilerplate openers
+  const paras = desc.split(/\n+/).map(p => p.trim()).filter(p => p.length > 60);
+  const text = paras[0] || desc.trim();
+  // Strip markdown-ish artifacts
+  return text.replace(/[#*_`>]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function extractSalary(desc) {
+  if (!desc) return null;
+  const m = desc.match(/\$[\d,]+(?:[kK])?\s*(?:[-–—]\s*\$[\d,]+(?:[kK])?)?(?:\s*(?:\/yr|\/year|annually|\/hr|\/hour|per year|per hour))?/);
+  if (!m || !m[0].includes('$')) return null;
+  const raw = m[0].trim();
+  return raw.length > 60 ? raw.slice(0, 60) + '…' : raw;
+}
+
+function extractEmploymentType(desc) {
+  if (!desc) return null;
+  const m = desc.match(/\b(full[- ]time|part[- ]time|contract|freelance|temporary)\b/i);
+  return m ? m[1].toLowerCase().replace('-', ' ') : null;
 }
 
 function renderJobs(statusMsg) {
   document.getElementById('jobs-status').textContent = statusMsg || '';
   jobsData.sort((a, b) => combinedScore(b) - combinedScore(a));
   const list = document.getElementById('jobs-list');
-  list.innerHTML = jobsData.map((j, i) => `
+  list.innerHTML = jobsData.map((j, i) => {
+    const salary = extractSalary(j.description);
+    const locParts = [j.location ? escHtml(j.location) : null, j.remote ? '<strong>remote</strong>' : null].filter(Boolean).join(' · ');
+    const locWithSalary = [locParts, salary ? `<span class="job-card-salary-inline">${escHtml(salary)}</span>` : null].filter(Boolean).join(' · ');
+    const excerpt = extractExcerpt(j.description);
+    const chips = j.chips || [];
+
+    return `
     <div class="job-card">
-      <div class="job-card-head">
-        <div>
+      <div class="job-card-body">
+        <div class="job-card-identity">
           <div class="job-card-title">${escHtml(j.title)}</div>
-          <div class="job-card-company">${escHtml(j.company)}${j.department ? ' · ' + escHtml(j.department) : ''}</div>
+          <div class="job-card-company">
+            <span class="job-card-co-name">${escHtml(j.company)}</span>
+          </div>
+          <div class="job-card-location-row">
+            ${locWithSalary ? `<span class="job-card-location">${locWithSalary}</span>` : ''}
+            <span class="job-card-provenance">${j.posted ? j.posted : 'Undated'} · ${escHtml(j.source)}</span>
+          </div>
         </div>
-        ${scoreChip(j)}
+        ${excerpt ? `<div class="job-card-excerpt">${escHtml(excerpt)}</div>` : ''}
+        ${j.verdict && j.verdict.why ? `<div class="job-card-verdict"><em class="job-card-verdict-attr">Claude's read</em>${escHtml(j.verdict.why)}</div>` : ''}
+        <div class="job-card-actions">
+          <button class="job-icon-btn" onclick="trackJob(${i})" title="Track this posting" aria-label="Track">
+            <span class="material-symbols-rounded">bookmark_add</span>
+          </button>
+          <button class="job-icon-btn job-dismiss" onclick="dismissJob(${i})" title="Dismiss" aria-label="Dismiss">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        </div>
+        ${chips.length ? `<div class="job-card-chips">${chips.map(c => `<span class="job-card-chip">${escHtml(c)}</span>`).join('')}</div>` : ''}
       </div>
-      ${j.verdict && j.verdict.why ? `<div class="job-card-verdict">${escHtml(j.verdict.why)}</div>` : ''}
-      <div class="job-card-meta">
-        <span>${escHtml(j.location || 'Location not listed')}${j.remote ? ' · remote' : ''}</span>
-        <span>${j.posted ? 'Posted ' + j.posted : 'Undated'} · ${j.source}</span>
-      </div>
-      <div class="job-card-actions">
-        <button class="btn btn-primary btn-sm" onclick="analyzeJob(${i})">Analyze →</button>
-        <button class="btn btn-ghost btn-sm" onclick="trackJob(${i})">Track</button>
-        <a class="btn btn-ghost btn-sm" href="${escHtml(j.url)}" target="_blank" rel="noopener">View posting ↗</a>
-        <button class="btn btn-ghost btn-sm job-dismiss" onclick="dismissJob(${i})">Dismiss</button>
+      ${scoreCol(j)}
+      <div class="job-card-action-bar">
+        <a class="job-card-view-btn" href="${escHtml(j.url)}" target="_blank" rel="noopener">View ↗</a>
+        <button class="job-card-analyze-btn" onclick="analyzeJob(${i})">Analyze →</button>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 // Dismissals teach the system: the reason lands in

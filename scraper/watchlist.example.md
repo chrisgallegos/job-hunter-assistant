@@ -9,6 +9,23 @@ To find a company's slug, try its careers page URL
 or run `python3 scraper/scrape.py --probe SLUG` and let it check all
 three sources for you.
 
+## Expanding your watchlist with AI
+
+Once you have a `private/career-narrative.md`, ask your AI to suggest
+companies based on your actual targets — not generic lists:
+
+```
+Read private/career-narrative.md and suggest 10–15 companies to add
+to my scraper watchlist. For each one: why it fits my targets, which
+ATS platform it uses (greenhouse / lever / ashby), and the likely slug.
+Mark any you're uncertain about so I can run --probe to verify.
+```
+
+The AI uses your stated industries, salary expectations, and
+deal-breakers to weight suggestions — not just your job title. Run this
+prompt again any time you hear about a company worth watching. The
+watchlist is designed to grow over time.
+
 ## Companies
 
 The slug as it appears in the company's job board URL. Pin a source in

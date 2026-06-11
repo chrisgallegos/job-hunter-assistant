@@ -180,6 +180,54 @@ def score(posting, criteria):
     return points
 
 
+def compute_chips(posting, criteria):
+    """Up to 5 goal-relevant chips for the card UI.
+    Priority: strong-title match → boost-keyword hits → department →
+    seniority → employment type. All derived from the posting + watchlist,
+    so they work without any AI involvement."""
+    chips = []
+    title = posting["title"].lower()
+    desc = posting.get("description") or ""
+    haystack = " ".join([
+        title,
+        (posting.get("department") or "").lower(),
+        desc[:4000].lower(),
+    ])
+
+    # 1. Which strong title fired — most direct goal signal
+    for kw in criteria["strong_titles"]:
+        if kw_match(kw, title):
+            chips.append(kw)
+            break
+
+    # 2. Boost keyword hits — watchlist-driven interest signals
+    for kw in criteria["boost_keywords"]:
+        if len(chips) >= 4:
+            break
+        if kw_match(kw, haystack) and kw not in chips:
+            chips.append(kw)
+
+    # 3. Department label from the ATS
+    dept = (posting.get("department") or "").strip()
+    if dept and dept.lower() != "setup" and dept.lower() not in chips and len(chips) < 5:
+        chips.append(dept)
+
+    # 4. Seniority level from the title
+    for level in ("director", "principal", "staff", "lead", "senior"):
+        if level in title and level not in chips and len(chips) < 5:
+            chips.append(level)
+            break
+
+    # 5. Employment type from the description
+    m = re.search(r'\b(full[- ]time|part[- ]time|contract|freelance)\b', desc, re.I)
+    if m and len(chips) < 5:
+        emp = m.group(1).lower().replace("-", " ")
+        if emp not in chips:
+            chips.append(emp)
+
+    return chips[:5]
+
+
 # Source hierarchy: free platforms > paid feeds.
 # When the same job appears on multiple sources, prefer the free version.
 SOURCE_COST = {
@@ -249,7 +297,7 @@ def write_posting_file(posting, today):
     return path
 
 
-def write_latest_json(results, today, days):
+def write_latest_json(results, today, days, criteria):
     """Machine-readable sidecar of the latest digest, for the local app
     (serve.py). The Markdown digest remains the canonical artifact —
     this is a view over the same data, regenerated on every scan."""
@@ -267,6 +315,7 @@ def write_latest_json(results, today, days):
             "source": posting["source"],
             "posted": posted.date().isoformat() if posted else None,
             "score": points,
+            "chips": compute_chips(posting, criteria),
             "file": str(file_path.relative_to(ROOT)),
             "description": html_to_text(posting["description"]),
         })
@@ -486,7 +535,7 @@ def scan(days=7, rescan=False, company=None, source=None, log=None):
         write_review_queue(results, today)
         log(f"Digest: {digest.relative_to(ROOT)}")
         log(f"AI review queue: {REVIEW_QUEUE.relative_to(ROOT)}")
-    write_latest_json(results, today, days)
+    write_latest_json(results, today, days, criteria)
     save_seen(seen)
     return results
 
