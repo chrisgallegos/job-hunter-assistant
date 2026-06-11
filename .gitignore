@@ -55,10 +55,13 @@ output/                    # Legacy output dir (deprecated, use private/jobs/)
 # ═══════════════════════════════════════════════════════════════════════════
 # SECURITY: NEVER COMMIT CREDENTIALS OR SECRETS
 # ═══════════════════════════════════════════════════════════════════════════
-# Even though the system doesn't use API keys, if you extend it:
 
 .env                       # Environment variables
 .env.local                 # Local overrides
-secrets/                   # Credentials
+secrets/                   # Credentials folder
 *.key                      # SSH keys
 *.pem                      # Certificates
+
+# API keys for optional sources live in private/ (already gitignored above,
+# but listed explicitly here as documentation of what might exist):
+# private/usajobs.env       — USAJobs API key (free, from developer.usajobs.gov)
