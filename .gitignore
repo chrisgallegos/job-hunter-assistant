@@ -1,14 +1,64 @@
-# Your personal job search data — never committed, never published.
-# Everything in private/ is yours alone: career narrative, applications,
-# drafts, research, tracker. The templates/ folder is the publishable system.
+# ═══════════════════════════════════════════════════════════════════════════
+# YOUR PERSONAL JOB SEARCH DATA — NEVER COMMITTED, NEVER PUBLISHED
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Everything in private/ is YOUR data:
+# - career-narrative.md     Your real story, targets, deal-breakers
+# - tracker.md              Your application log and funnel analysis
+# - watchlist.md            Your custom company list and filters
+# - jobs/                   Your search history and verdicts
+#   - digest-*.md           Scans you've reviewed
+#   - verdicts.json         Your AI collaborator's judgments
+#   - dismissed.json        Postings you rejected (with reasons)
+#   - learnings.md          Accumulated dismissal patterns
+#   - postings/             Individual JD analyses
+#
+# The .gitignore rule below says:
+#   - Ignore EVERYTHING in private/ (your data stays private)
+#   - EXCEPT private/README.md (the template for forks to read)
+#
+# This means: if you fork this repo and push to GitHub, your search data
+# never leaves your machine. The public repo has only examples.
+
 private/*
 !private/README.md
 
-# OS noise
-.DS_Store
-Thumbs.db
+# ═══════════════════════════════════════════════════════════════════════════
+# OS AND TOOL NOISE
+# ═══════════════════════════════════════════════════════════════════════════
 
-# Scraper output (if you use the optional scraping layer)
-output/
-*.csv
-__pycache__/
+.DS_Store                  # macOS metadata
+Thumbs.db                  # Windows metadata
+__pycache__/               # Python bytecode
+*.pyc                      # Compiled Python
+.venv/                     # Virtual env (if you use one)
+*.egg-info/                # Python packaging
+
+# ═══════════════════════════════════════════════════════════════════════════
+# EDITOR AND IDE
+# ═══════════════════════════════════════════════════════════════════════════
+
+.vscode/                   # VS Code settings (you customize locally)
+.idea/                     # JetBrains IDE
+*.swp                      # Vim
+*.swo                      # Vim
+*~                         # Emacs
+.DS_Store                  # macOS
+
+# ═══════════════════════════════════════════════════════════════════════════
+# OPTIONAL: IF YOU MODIFY THE SCRAPER TO WRITE ELSEWHERE
+# ═══════════════════════════════════════════════════════════════════════════
+
+output/                    # Legacy output dir (deprecated, use private/jobs/)
+*.csv                      # Exports (keep in private/ instead)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SECURITY: NEVER COMMIT CREDENTIALS OR SECRETS
+# ═══════════════════════════════════════════════════════════════════════════
+# Even though the system doesn't use API keys, if you extend it:
+
+.env                       # Environment variables
+.env.local                 # Local overrides
+secrets/                   # Credentials
+*.key                      # SSH keys
+*.pem                      # Certificates

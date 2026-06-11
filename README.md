@@ -6,125 +6,341 @@ A portable, self-owned job search system built on plain Markdown files.
 
 ---
 
-## If you have an AI: hand it this repo
+## Quick start: the interactive mode
 
-Drop this folder into a conversation with Claude, ChatGPT, Gemini, or
-any capable model and say:
+```bash
+# 1. Clone and enter the repo
+git clone https://github.com/chrisgallegos/job-hunter-toolkit.git
+cd job-hunter-toolkit
 
-> *"Read the docs/ folder and help me run a job search session."*
+# 2. Copy the example watchlist and customize it
+cp scraper/watchlist.example.md private/watchlist.md
+# Edit private/watchlist.md: companies, title filters, boost keywords, locations
 
-That's it. The AI absorbs the instructions and knows what to do — how
-to interview you, how to analyze a job posting, how to update your
-tracker. The docs are written for both you and the AI to read. Nothing
-is hidden in a prompt you can't see.
+# 3. Start the local server
+python3 serve.py
+# Opens http://localhost:8765 — the app is now live on your machine
 
-**Using Claude Code** (Anthropic's local CLI tool)? Even better. Start
-a session from this folder and the AI reads and writes your files
-directly — your career narrative, tracker, and JD analyses update in
-real-time during the conversation. No copy-paste, no cleanup. See
-`docs/setup-and-modes.md` for the exact first-session prompt.
+# 4. Click "Jobs" → "Scan now" to pull fresh postings
+# Analyze, Track, or Dismiss each one. The app reads/writes your private/ folder.
+```
 
----
-
-## If you don't have an AI: the docs guide you directly
-
-Every template is a human-readable worksheet with clear instructions.
-The `docs/facilitator-guide.md` walks you through each section in
-order — what to write, why it matters, and what to watch out for.
-The structure does the thinking you'd otherwise be doing alone.
+**What happens:**
+- The scraper pulls from Greenhouse, Lever, Ashby company boards + RemoteOK, Remotive, WeWorkRemotely feeds
+- Postings are filtered by your watchlist, scored by relevance, and saved to `private/jobs/`
+- Each posting gets a card with Analyze (→ JD Analysis form), Track (→ application log), View (→ original), Dismiss (→ learnings)
+- Dismissed reasons accumulate — periodically ask your AI to read them and suggest watchlist refinements
 
 ---
 
-## What this is
+## If you have an AI: the self-training loop
 
-A structured methodology for running a job search — analysis worksheets,
-drafting guides, research checklists, and a tracker — written as plain
-Markdown templates you fill out and own.
+The toolkit learns from itself through a three-file contract:
 
-It is **not** an AI tool. The methodology does the thinking. But every
-template is written to be equally legible to you and to an AI collaborator
-of your choice, so you can delegate the laborious parts — parsing job
-descriptions, drafting cover letters, pattern-matching across postings —
-while you bring the judgment and career context only you have.
+**1. Review queue** (scraper writes this on every scan)
+```
+private/jobs/review-queue.md
+```
+Token-lean list of new postings + extracted requirements. Designed as a handoff to your AI:
+- Read it alongside `private/career-narrative.md`
+- Judge each posting for fit beyond keywords
+- Write verdicts.json
 
-## The ladder
+**2. Verdicts** (your AI writes this)
+```json
+{
+  "https://jobs.ashbyhq.com/...": {
+    "delta": 2,
+    "why": "Gaming target hit dead-on. UI craft for Guild Wars 3, remote."
+  },
+  "https://weworkremotely.com/...": {
+    "delta": -3,
+    "why": "Building architecture, not product design — false positive."
+  }
+}
+```
+Delta range: +3 (strong fit, clear angle) → -3 (deal-breaker or discipline mismatch). The app displays these as color-coded adjustments to the keyword score: **9+2** means score 9, AI bump +2.
 
-Use it at whatever rung suits you. Each one works without the rung above it:
+**3. Learnings** (app appends dismissals here)
+```markdown
+# Learnings — dismissed postings
 
-1. **No AI** — fill out the templates yourself. The structure forces the
-   thinking: keyword gaps, story preparation, channel tracking.
-2. **With your AI collaborator** — point any AI at a template plus your
-   career narrative. The "If working with an AI collaborator" section in
-   each template tells it how to participate.
-3. **With the scraper** *(optional — see `scraper/`)* — a local Python
-   script that pulls fresh postings straight from public ATS APIs
-   (Greenhouse, Lever, Ashby) for the companies you watch, filters them
-   against your criteria, and writes a relevance-scored digest your AI
-   can read. Standard library only. Runs on your machine. No data sent
-   anywhere. Copy `scraper/watchlist.example.md` to
-   `private/watchlist.md`, then `python3 scraper/scrape.py`.
+- 2026-06-11 — Senior Gameplay Designer — Epic Games — gameplay
+- 2026-06-11 — Level Designer — Bungie — gameplay
+- 2026-06-10 — Sales Director — Home Depot — sales role
+```
+Every dismissal you make (with a one-word reason) lands here. Periodically ask your AI:
+> *"Read private/jobs/learnings.md and private/watchlist.md. What patterns do you see? Suggest watchlist edits."*
 
-## What you own
+The AI replies with: "5 dismissals mention 'gameplay' — add to department excludes. Add 'sales' to title excludes." You edit the watchlist, next scan is smarter.
 
-Everything. There is no service, no account, no credits, no telemetry.
-Fork it, change it, share it. Your personal data lives in `private/`,
-which is gitignored — the system is public, your search is yours.
+**Why files, not APIs?**
+- Portable: fork the repo, run on your machine, zero cloud dependency
+- Transparent: read/edit/understand every file with a text editor
+- Multi-AI: use Claude, GPT, Gemini, or any model — same contract
+- Auditable: git history shows how the system learned over time
 
-## Getting started
+---
 
-**Choose how you want to run it — see `docs/setup-and-modes.md` for
-the full guide.**
+## The three rungs of the ladder
 
-The short version:
+Use whichever fits your workflow:
 
-- **Claude Code (CLI):** Start a session from this folder. The AI reads
-  and writes your files directly during the conversation — no
-  copy-paste, no cleanup. Highest fidelity. First-session prompt is
-  in the setup guide.
-- **Chat-based AI (Claude.ai, ChatGPT, Gemini):** Paste your files in,
-  work through the session, copy output back manually. Works anywhere.
-- **No AI:** Follow `docs/facilitator-guide.md` as a self-guided
-  worksheet. The structure does the work.
+### Rung 1: No AI — templates only
+Fill out the Markdown templates yourself. The structure forces the thinking.
+```
+templates/career-narrative.md        → who you are, stories, metrics
+templates/jd-analysis.md             → decode a posting, reach a verdict
+templates/application-tracker.md     → log everything, find patterns
+```
+See `docs/facilitator-guide.md` for step-by-step instructions.
 
-Then:
+### Rung 2: With your AI (chat-based)
+Drop a template + your career narrative into Claude, ChatGPT, or Gemini:
+```
+1. Copy templates/career-narrative.md to private/career-narrative.md
+2. Fill it out (or have your AI interview you first)
+3. For each posting: copy templates/jd-analysis.md, paste the job description
+4. Ask your AI: "Read my narrative and analyze this posting."
+5. Copy the verdict back to your file
+```
+Works anywhere. No setup. No code.
 
-1. Build your career narrative first — copy `templates/career-narrative.md`
-   to `private/` and run a session with `docs/facilitator-guide.md` as
-   the guide. This is the foundation everything else draws from.
-2. Found a posting? Copy `templates/jd-analysis.md` to `private/jd-[company]-[role].md`,
-   paste the job description, work through it. Verdict plus angle comes
-   out the other end.
-3. Log everything in `private/tracker.md` — the patterns section is
-   where the search learns from itself.
+### Rung 3: With the scraper + interactive app
+```bash
+python3 serve.py  # Local server, http://localhost:8765
+```
+- Scraper pulls fresh postings from 6 sources every day (or on demand)
+- App shows a live digest, scored and filtered by your watchlist
+- One-click Analyze/Track/Dismiss
+- AI review queue is written automatically; hand it to your AI monthly for verdict pass
 
-## The templates
+---
 
-| Template | Job |
-|---|---|
-| `career-narrative.md` | The foundation — who you are, your stories, your voice |
-| `jd-analysis.md` | Decode a posting; reach an apply/skip/stretch verdict |
-| `cover-letter.md` | Turn the verdict's angle into a letter in your voice |
-| `company-research.md` | One page that makes you the candidate who did the homework |
-| `interview-prep.md` | Angles, stories, and out-loud rehearsal per interview |
-| `application-tracker.md` | The pulse of the search, and its feedback loop |
+## How the scraper works
+
+**Sources:** Greenhouse, Lever, Ashby (company job boards); Remotive, RemoteOK, WeWorkRemotely (job feeds).
+
+**Watchlist** (`private/watchlist.md` — you customize this):
+```markdown
+## Companies
+- epicgames (greenhouse)
+- spotify (lever)
+- arenanet (ashby)
+
+## Feeds
+- remotive (design)
+- weworkremotely (design)
+
+## Strong titles
+- product designer
+- visual design
+- ui
+- ux
+
+## Title excludes
+- engineer
+- recruiter
+
+## Department excludes
+- game design
+- gameplay
+- level design
+
+## Boost keywords
+- gaming
+- studio
+- design system
+```
+
+**Scoring:**
+- Base: title match (strong titles +3, includes +0, excludes drop to 0), seniority level (+2), boost keywords (up to +5), remote (+1)
+- AI layer: verdicts delta overrides or amplifies the base score
+- Dedup: when the same job appears on multiple sources, keeps the free platform version (Greenhouse/Lever/Ashby over RemoteOK's pay-to-play)
+
+**Output:**
+- `private/jobs/digest-YYYY-MM-DD.md` — human-readable ranked list, Markdown export
+- `private/jobs/latest.json` — machine-readable for the app
+- `private/jobs/postings/` — one MD file per posting, ready to drop into JD Analysis template
+- `private/jobs/review-queue.md` — token-lean handoff to your AI
+- `private/jobs/verdicts.json` — where your AI writes back
+- `private/jobs/dismissed.json` — what you rejected and why
+- `private/jobs/learnings.md` — pattern accumulation for watchlist refinement
+
+---
+
+## Security & privacy
+
+**What stays on your machine:**
+- Everything in `private/` — your narrative, tracker, search history, verdicts, dismissals
+- Gitignored entirely. Never committed. Never published.
+
+**What's public in the repo:**
+- Templates (generic, no personal data)
+- Docs (methodology, how to use the system)
+- Scraper code (reads public APIs only)
+- Server code (binds localhost only, serves only what you need)
+- Example watchlist (no real companies yet — you customize it)
+
+**Data flow:**
+1. Scraper → pulls from public job boards (Greenhouse, Lever, Ashby, Remotive, RemoteOK, WeWorkRemotely)
+2. Server → local only, binds 127.0.0.1, never broadcasts
+3. App → reads/writes your private/ folder via the server
+4. Your AI → you hand it files, it hands you verdicts.json back (no API, no account)
+
+**LinkedIn deliberately excluded:**
+- No public job API available; unofficial scraping violates ToS and is technically fragile
+- Most LinkedIn postings are republished from Greenhouse/Lever/Ashby anyway — we catch them there first
+- Alternative: save LinkedIn job searches as email alerts, paste interesting ones into JD Analysis
+
+**No telemetry, no accounts, no tracking.** The entire toolkit is yours.
+
+---
 
 ## Structure
 
 ```
-templates/   The system — generic, publishable, yours to adapt
-docs/        Philosophy and methodology — why it works this way
-ideas/       Future components, designed but not built
-private/     Your instance — gitignored, never leaves your machine
+templates/          Reusable MD templates — copy these into private/ and fill them out
+  career-narrative.md       Your foundation: stories, metrics, voice, targets, deal-breakers
+  jd-analysis.md            Decode a posting, reach apply/skip/stretch verdict
+  cover-letter.md           Draft from your narrative + the posting's angle
+  company-research.md       Background before an interview
+  interview-prep.md         Stories and rehearsal prompts
+  application-tracker.md    Log every application, track the funnel
+
+docs/               Philosophy, methodology, setup guides
+  philosophy.md             Why the "we" model works
+  methodology.md            How the templates fit together
+  facilitator-guide.md      Step-by-step for no-AI mode
+  setup-and-modes.md        First-session prompts for Claude Code, chat, self-guided
+
+scraper/            Job board scraper — pulls from public APIs, local only
+  scrape.py                 CLI: python3 scraper/scrape.py [--days 7] [--rescan] ...
+  serve.py                  Local server: python3 serve.py [--port 8765]
+  sources/                  Adapters: greenhouse.py, lever.py, ashby.py
+  feeds/                    Feed adapters: remotive.py, remoteok.py, weworkremotely.py
+  watchlist.example.md      Template for your custom watchlist
+
+index.html, app.js, app.css, tokens.css
+                    Interactive app: run serve.py, opens at http://localhost:8765
+                    Sections: Home, Narrative (wizard + portrait), JD Analysis, Jobs (scraper UI), Tracker
+
+ideas/              Designs for future layers
+  career-coin.md            Portable career identity object (human + machine readable)
+  interactive-site.md       Direction notes for the browser app
+  scraper-architecture.md   Design sketch and deferred decisions
+
+private/            YOUR instance — gitignored, never published
+  career-narrative.md       Filled-out version (you write this)
+  tracker.md                Application log and patterns
+  watchlist.md              Custom company list, filters, keywords
+  jobs/                     Scraper outputs
+    digest-YYYY-MM-DD.md    Ranked postings from that day's scan
+    latest.json             Machine-readable version (for the app)
+    review-queue.md         Token-lean handoff for your AI
+    verdicts.json           Your AI's judgment layer
+    dismissed.json          What you rejected + reason
+    learnings.md            Accumulated dismissal patterns
+    postings/               One MD file per posting (drop into JD Analysis)
+
+.gitignore          Ensures private/ stays private
+LICENSE             MIT — fork it, own it
 ```
+
+---
 
 ## Philosophy
 
-The "we" model: the human brings judgment and career context, the AI
-handles parsing, drafting, and pattern matching. Most AI job-search tools
-invert this — the AI does the thinking and falls over without it. Here,
-well-structured context is the product, and AI is an amplifier you can
-optionally plug in.
+**The "we" model:** The human brings judgment, career context, and the ability to say "no." The AI (optional) handles parsing, drafting, and pattern-matching — the parts that are tedious and scale.
+
+Most AI job-search tools flip this: the AI thinks, you confirm. Here, the structure does the thinking (the templates force you to answer hard questions), and AI is an optional amplifier. This means:
+
+- The system works without any AI (rung 1 and 2 don't require one)
+- Your narrative becomes the real asset — you own it, can port it anywhere, use any AI
+- Verdicts aren't black-box scores; you see the reasoning and can disagree
+- The feedback loop is explicit — dismissals → learnings → watchlist edits
+
+**Why Markdown?** It's human-readable, portable, version-controllable, and every tool understands it. You can read and edit everything with a text editor or your AI or both.
+
+---
+
+## For forkers: make it yours
+
+1. **Customize templates** — change the career narrative structure if your industry works differently, adapt the JD analysis for your targets
+2. **Extend the scraper** — add a new ATS adapter, a new feed source, or a dedup strategy that works better for your search
+3. **Tweak the watchlist** — company list, title filters, and boost keywords are all user-configurable
+4. **Share learnings patterns** — if you find a pattern (e.g., "game design roles are 60% false positives for product designers"), document it for others
+
+The toolkit is not a platform; it's a starting point. Fork it, break it, rebuild it to fit your search.
+
+---
+
+## Getting started (detailed)
+
+### Prerequisites
+- Python 3.6+
+- A text editor (any will do)
+- (Optional) An AI collaborator — Claude, ChatGPT, Gemini, etc.
+
+### Step 1: Set up your narrative
+```bash
+cp templates/career-narrative.md private/career-narrative.md
+# Edit private/career-narrative.md — fill in your story
+```
+Or, ask your AI:
+> "Read templates/career-narrative.md, then interview me. Fill it out based on my answers."
+
+This is the foundation. Everything else references it.
+
+### Step 2: Start analyzing postings
+Found a job posting? Create a file:
+```bash
+cp templates/jd-analysis.md private/jd-[company]-[role].md
+# Paste the job description
+# Work through the sections
+```
+Or ask your AI:
+> "Read my career narrative and this JD. Analyze it."
+
+### Step 3 (optional): Use the scraper
+```bash
+cp scraper/watchlist.example.md private/watchlist.md
+# Edit: add your target companies, refine filters
+python3 serve.py
+# Go to http://localhost:8765, click "Jobs", hit "Scan now"
+```
+
+### Step 4: Log and learn
+```bash
+cp templates/application-tracker.md private/tracker.md
+# Log every application as you submit
+# Periodically: "What patterns do I see? What needs to change?"
+```
+
+---
+
+## Troubleshooting
+
+**"No scans yet"** → Click "Scan now" (first scan takes ~30s as it checks 6 sources across dozens of companies)
+
+**"Watchlist has no companies"** → Edit `private/watchlist.md`, add companies under `## Companies`
+
+**"No matching postings"** → Watchlist filters might be too tight. Lower `## Title excludes`, or try `--days 60` to widen the window
+
+**"Server not responding"** → Make sure `python3 serve.py` is running. It binds `127.0.0.1:8765` by default. Check `--port` if 8765 is in use.
+
+**"Verdicts not showing up"** → Check that `private/jobs/verdicts.json` exists. Your AI needs to write it in the shape described above.
+
+---
 
 ## License
 
-MIT — free for anyone to own and run.
+MIT. Free for anyone to own and run. No conditions, no tracking.
+
+---
+
+## Questions?
+
+Check `docs/philosophy.md` for why the system is designed this way, or `docs/setup-and-modes.md` for first-session walkthroughs with Claude Code / chat / solo.
+
+The entire system is intentionally transparent. Read the code. Change it. Break it. Make it yours.
