@@ -44,3 +44,32 @@ straight into the workflow.
 - Dedup across sources when the same role appears on multiple boards
 - Staleness: postings vanish; keep the scraped copy (the JD analysis
   template already says to paste and keep the original for this reason)
+
+## Deferred: iCIMS adapter
+
+iCIMS is the dominant ATS at large enterprises — media conglomerates,
+retail, telecom, some gaming publishers (Take-Two/2K/Rockstar). It's
+notably absent from the current source list because there's no clean
+public JSON API: listings are JavaScript-rendered and the partner API
+requires a commercial agreement.
+
+**Approach when prioritized:**
+- Use Playwright or Puppeteer (headless browser) to render
+  `https://{company}.icims.com/jobs/search` and extract job JSON from
+  the network requests
+- Alternatively, scrape the iCIMS XML sitemap some companies expose:
+  `https://{company}.icims.com/sitemap.xml` — not universal but worth
+  checking per-company
+- iCIMS job URLs follow a consistent pattern once known:
+  `https://{company}.icims.com/jobs/{id}/job`
+
+**Known target companies likely on iCIMS** (confirmed not on GH/Lever/Ashby/BambooHR):
+- Take-Two Interactive (2K, Rockstar, Zynga)
+- Warner Bros / WB Games
+- NBCUniversal / Comcast
+- Ubisoft North America
+- Sega of America
+
+**Slug discovery note:** the iCIMS company subdomain is usually the
+company name or brand slug — same discovery problem as other ATS
+platforms, same `--probe`-style variant search applies.

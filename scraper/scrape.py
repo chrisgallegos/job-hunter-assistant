@@ -421,11 +421,33 @@ def save_seen(seen):
 # ─── Commands ────────────────────────────────────────────────
 
 def probe(slug):
+    base = slug.lower().replace(" ", "").replace("-", "").replace("_", "")
+    variants = dict.fromkeys([
+        slug,
+        base,
+        base + "inc",
+        base + "group",
+        base + "llc",
+        base + "hq",
+        base.rstrip("inc").rstrip("group") if len(base) > 4 else None,
+    ])
+    variants = [v for v in variants if v]
+
     print(f"Probing '{slug}' across sources...")
-    for name, module in get_sources().items():
-        postings = module.fetch(slug)
-        status = f"{len(postings)} postings" if postings else "no board found"
-        print(f"  {name:12} {status}")
+    sources = get_sources()
+    found_any = False
+    for variant in variants:
+        for name, module in sources.items():
+            postings = module.fetch(variant)
+            if postings:
+                label = f"  {name:12} {len(postings)} postings"
+                if variant != slug:
+                    label += f"  (slug: '{variant}')"
+                print(label)
+                found_any = True
+    if not found_any:
+        for name in sources:
+            print(f"  {name:12} no board found")
 
 
 class WatchlistError(Exception):
