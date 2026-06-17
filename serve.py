@@ -47,6 +47,75 @@ def with_verdicts(latest):
     return latest
 
 
+TRACKER = scrape.ROOT / "private" / "tracker.md"
+
+# Column orders match the file; values pass through verbatim (markdown,
+# emoji, links, dashes all preserved). See ideas/tracker-wiring.md.
+ACTIVE_KEYS = ("company", "role", "channel", "applied", "status", "next", "notes")
+CLOSED_KEYS = ("company", "role", "channel", "applied", "outcome", "learned")
+
+
+def _split_row(line):
+    """Split a markdown table row on `|` and trim each cell. Drops the
+    empty leading/trailing cells produced by the bordering pipes."""
+    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+
+def _parse_table(lines, keys):
+    """Turn the data rows of one MD table into a list of dicts.
+
+    Skips the header row, the `|---|` separator, and any non-table line
+    (e.g. the HTML comment inside the Closed table). All-blank rows are
+    omitted. Cell text is passed through verbatim."""
+    rows = []
+    seen_header = False
+    for line in lines:
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue  # not a table row (blank line, comment, prose, ---)
+        if not seen_header:
+            seen_header = True  # first table row is the header — skip it
+            continue
+        if set(stripped) <= set("|-: "):
+            continue  # separator row like |---|---|
+        cells = _split_row(stripped)
+        if not any(cells):
+            continue  # all-blank placeholder row
+        rows.append({key: (cells[i] if i < len(cells) else "")
+                     for i, key in enumerate(keys)})
+    return rows
+
+
+def parse_tracker():
+    """Parse private/tracker.md into the {active, closed, patterns} contract.
+
+    Like with_verdicts(): build the payload from the MD (the source of
+    truth), then hand it to send_json(). The file is never written here.
+    Returns the empty structure if the file is missing."""
+    if not TRACKER.exists():
+        return {"active": [], "closed": [], "patterns": ""}
+
+    sections = {}
+    current = None
+    buffer = []
+    for line in TRACKER.read_text().splitlines():
+        heading = line.strip()
+        if heading.startswith("## "):
+            if current is not None:
+                sections[current] = buffer
+            current = heading[3:].strip().lower()
+            buffer = []
+        elif current is not None:
+            buffer.append(line)
+    if current is not None:
+        sections[current] = buffer
+
+    active = _parse_table(sections.get("active", []), ACTIVE_KEYS)
+    closed = _parse_table(sections.get("closed", []), CLOSED_KEYS)
+    patterns = "\n".join(sections.get("patterns", [])).strip()
+    return {"active": active, "closed": closed, "patterns": patterns}
+
+
 def append_learning(today, body, reason):
     """Dismissals accumulate in learnings.md — the raw material the
     search learns from. Periodically hand it to your AI: 'read my
@@ -94,6 +163,9 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_json(
                 {"text": scrape.EXAMPLE_WATCHLIST.read_text(), "example": True}
             )
+
+        if self.path == "/api/tracker":
+            return self.send_json(parse_tracker())
 
         # Static files — but private/ is never served over HTTP.
         # The API above exposes exactly what the app needs, nothing more.
