@@ -569,15 +569,13 @@ function analyzeJob(i) {
   window.scrollTo(0, 0);
 }
 
-// Bridge: scraped posting → tracker modal, prefilled.
+// Bridge: scraped posting → tracker.
+// Phase 1 is read-only — the tracker mirrors private/tracker.md and has no
+// in-app write path yet. Surface a copy-paste-ready row instead.
 function trackJob(i) {
   const j = jobsData[i];
-  openAddModal();
-  document.getElementById('entry_company').value = j.company;
-  document.getElementById('entry_role').value    = j.title;
-  document.getElementById('entry_channel').value = 'cold';
-  document.getElementById('entry_status').value  = 'researching';
-  document.getElementById('entry_notes').value   = `Found by scraper ${j.posted ? '(posted ' + j.posted + ')' : ''}. ${j.url}`;
+  const row = `| ${j.company} | ${j.title} | cold | ${today()} | researching | — | Found by scraper${j.posted ? ' (posted ' + j.posted + ')' : ''}. ${j.url} |`;
+  alert('Editing the tracker in-app lands in Phase 2.\n\nFor now, paste this row under "## Active" in private/tracker.md:\n\n' + row);
 }
 
 // Watchlist editor — edits private/watchlist.md through the server.
@@ -681,107 +679,156 @@ function loadJDDraft() {
 
 // ─── Tracker ───────────────────────────────────────────────
 
-let trackerData = [];
+// Phase 1: read-only view of private/tracker.md, served by serve.py at
+// GET /api/tracker → { active: [...], closed: [...], patterns: "<md>" }.
+// Editing is Phase 2 — for now we render the file faithfully. Cell values
+// may contain markdown (bold, links, emoji); mdInline() renders them safely.
+let trackerData = { active: [], closed: [], patterns: '' };
 
-function loadTracker() {
-  try { trackerData = JSON.parse(localStorage.getItem(TRACKER_KEY)) || []; }
-  catch { trackerData = []; }
+async function loadTracker() {
+  const status = document.getElementById('tracker-status');
+  if (status) status.textContent = '';
+  try {
+    const resp = await fetch('/api/tracker');
+    if (!resp.ok) throw new Error(resp.status);
+    const data = await resp.json();
+    trackerData = {
+      active:   Array.isArray(data.active) ? data.active : [],
+      closed:   Array.isArray(data.closed) ? data.closed : [],
+      patterns: typeof data.patterns === 'string' ? data.patterns : '',
+    };
+  } catch {
+    trackerData = { active: [], closed: [], patterns: '' };
+    if (status) status.textContent = 'Could not load the tracker — is the server running? (start serve.py)';
+  }
+  renderTracker();
 }
 
-function saveTracker() {
-  localStorage.setItem(TRACKER_KEY, JSON.stringify(trackerData));
+// Minimal, safe inline markdown → HTML for table cells. Escapes first, then
+// re-introduces a small set of inline patterns. Emoji/dashes pass through as
+// plain text. Not a full parser — Phase 1 just needs readability.
+function mdInline(str) {
+  if (str == null) return '';
+  let s = escHtml(String(str));
+  // links [text](url) — only http(s)/mailto to avoid javascript: injection
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g,
+    (m, text, url) => `<a href="${url}" target="_blank" rel="noopener">${text}</a>`);
+  // bold **x**
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // italics *x* / _x_
+  s = s.replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, '$1<em>$2</em>');
+  s = s.replace(/(^|[^_])_([^_]+)_(?!_)/g, '$1<em>$2</em>');
+  // inline code `x`
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  return s;
+}
+
+// Render a markdown block readably without a heavy parser: paragraphs,
+// "- " bullets, and inline formatting via mdInline(). Good enough for Phase 1.
+function mdBlock(str) {
+  if (!str || !str.trim()) return '<p class="text-muted">No patterns recorded yet.</p>';
+  const lines = String(str).replace(/\r\n/g, '\n').split('\n');
+  let html = '';
+  let inList = false;
+  for (const raw of lines) {
+    const line = raw.trim();
+    const bullet = line.match(/^[-*]\s+(.*)$/);
+    const heading = line.match(/^(#{1,6})\s+(.*)$/);
+    if (bullet) {
+      if (!inList) { html += '<ul>'; inList = true; }
+      html += `<li>${mdInline(bullet[1])}</li>`;
+      continue;
+    }
+    if (inList) { html += '</ul>'; inList = false; }
+    if (heading) {
+      const level = Math.min(heading[1].length + 2, 6);
+      html += `<h${level}>${mdInline(heading[2])}</h${level}>`;
+    } else if (line) {
+      html += `<p>${mdInline(line)}</p>`;
+    }
+  }
+  if (inList) html += '</ul>';
+  return html;
 }
 
 function renderTracker() {
-  const tbody = document.getElementById('tracker-body');
-  const empty = document.getElementById('tracker-empty');
+  const content = document.getElementById('tracker-content');
+  const empty   = document.getElementById('tracker-empty');
+  const active  = trackerData.active || [];
+  const closed  = trackerData.closed || [];
+  const patterns = trackerData.patterns || '';
 
-  if (trackerData.length === 0) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
+  const isEmpty = active.length === 0 && closed.length === 0 && !patterns.trim();
+  if (empty)   empty.style.display   = isEmpty ? 'block' : 'none';
+  if (content) content.style.display = isEmpty ? 'none'  : 'block';
+  if (isEmpty) return;
 
-  empty.style.display = 'none';
-  tbody.innerHTML = trackerData.map((r, i) => `
-    <tr>
-      <td><strong>${r.company || '—'}</strong></td>
-      <td>${r.role || '—'}</td>
-      <td>${r.channel || '—'}</td>
-      <td>${r.applied || '—'}</td>
-      <td><span class="status-pill">${r.status || 'researching'}</span></td>
-      <td>${r.next || '—'}</td>
-      <td>
-        <button class="btn btn-ghost btn-sm" onclick="editEntry(${i})">Edit</button>
-      </td>
-    </tr>
-  `).join('');
+  const activeList = document.getElementById('tracker-active-body');
+  activeList.innerHTML = active.length
+    ? active.map(r => trackerCard(r, false)).join('')
+    : `<p class="tracker-card-empty text-muted">No active applications.</p>`;
+
+  const closedList = document.getElementById('tracker-closed-body');
+  closedList.innerHTML = closed.length
+    ? closed.map(r => trackerCard(r, true)).join('')
+    : `<p class="tracker-card-empty text-muted">Nothing closed out yet.</p>`;
+
+  document.getElementById('tracker-patterns').innerHTML = mdBlock(patterns);
 }
 
-function openAddModal(editIndex = null) {
-  const modal = document.getElementById('entry-modal');
-  const entry = editIndex !== null ? trackerData[editIndex] : {};
+// One application = one card. Active and Closed share the same shape; the
+// short fields differ (Status pill vs Outcome) and the full-width block at the
+// bottom is Notes (Active) or "What I learned" (Closed). Cell values may carry
+// markdown, so mdInline() renders them. The card reflows responsively via CSS —
+// the meta line wraps and collapses to a stack on narrow widths.
+function trackerCard(r, isClosed) {
+  const company = mdInline(r.company) || '—';
+  const role    = mdInline(r.role);
+  const channel = mdInline(r.channel);
+  const applied = mdInline(r.applied);
 
-  document.getElementById('modal-title').textContent = editIndex !== null ? 'Edit application' : 'Add application';
-  document.getElementById('entry_company').value  = entry.company  || '';
-  document.getElementById('entry_role').value     = entry.role     || '';
-  document.getElementById('entry_channel').value  = entry.channel  || '';
-  document.getElementById('entry_applied').value  = entry.applied  || today();
-  document.getElementById('entry_status').value   = entry.status   || 'researching';
-  document.getElementById('entry_next').value     = entry.next     || '';
-  document.getElementById('entry_notes').value    = entry.notes    || '';
-  document.getElementById('entry-modal').dataset.editIndex = editIndex ?? '';
+  // Meta items: small labeled facts that wrap freely.
+  const meta = [];
+  if (channel) meta.push(`<span class="tracker-meta-item"><span class="tracker-meta-label">Channel</span>${channel}</span>`);
+  if (applied) meta.push(`<span class="tracker-meta-item"><span class="tracker-meta-label">Applied</span>${applied}</span>`);
 
-  modal.classList.add('open');
-}
-
-function editEntry(i) { openAddModal(i); }
-
-function closeModal() {
-  document.getElementById('entry-modal').classList.remove('open');
-}
-
-function saveEntry() {
-  const editIndex = document.getElementById('entry-modal').dataset.editIndex;
-  const entry = {
-    company: document.getElementById('entry_company').value.trim(),
-    role:    document.getElementById('entry_role').value.trim(),
-    channel: document.getElementById('entry_channel').value.trim(),
-    applied: document.getElementById('entry_applied').value.trim(),
-    status:  document.getElementById('entry_status').value.trim(),
-    next:    document.getElementById('entry_next').value.trim(),
-    notes:   document.getElementById('entry_notes').value.trim(),
-  };
-
-  if (editIndex !== '') {
-    trackerData[parseInt(editIndex)] = entry;
+  if (isClosed) {
+    const outcome = mdInline(r.outcome);
+    if (outcome) meta.push(`<span class="tracker-meta-item"><span class="tracker-meta-label">Outcome</span><span class="status-pill">${outcome}</span></span>`);
   } else {
-    trackerData.push(entry);
+    const status = mdInline(r.status);
+    if (status) meta.push(`<span class="tracker-meta-item"><span class="tracker-meta-label">Status</span><span class="status-pill">${status}</span></span>`);
   }
 
-  saveTracker();
-  renderTracker();
-  closeModal();
+  // Next action (Active only) gets its own line.
+  const next = isClosed ? '' : mdInline(r.next);
+  const nextRow = next
+    ? `<div class="tracker-card-line"><span class="tracker-line-label">Next</span><span class="tracker-line-val">${next}</span></div>`
+    : '';
+
+  // Full-width block: Notes (Active) or What I learned (Closed) — the
+  // "pseudo-row within the row" that spans the card.
+  const blockLabel = isClosed ? 'What I learned' : 'Notes';
+  const blockVal   = isClosed ? mdInline(r.learned) : mdInline(r.notes);
+  const block = blockVal
+    ? `<div class="tracker-card-block"><span class="tracker-line-label">${blockLabel}</span><div class="tracker-block-val">${blockVal}</div></div>`
+    : '';
+
+  return `
+    <article class="tracker-card">
+      <div class="tracker-card-head">
+        <span class="tracker-card-company">${company}</span>
+        ${role ? `<span class="tracker-card-role">${role}</span>` : ''}
+      </div>
+      ${meta.length ? `<div class="tracker-card-meta">${meta.join('')}</div>` : ''}
+      ${nextRow}
+      ${block}
+    </article>`;
 }
 
-function exportTrackerMD() {
-  if (trackerData.length === 0) { alert('No applications logged yet.'); return; }
-
-  const rows = trackerData.map(r =>
-    `| ${r.company} | ${r.role} | ${r.channel} | ${r.applied} | ${r.status} | ${r.next} |`
-  ).join('\n');
-
-  const md = `# Application Tracker
-
-| Company | Role | Channel | Applied | Status | Next action |
-|---|---|---|---|---|---|
-${rows}
-
----
-*Exported ${today()} from Job Hunter Toolkit*
-`;
-  downloadFile('tracker.md', md);
-}
+// Phase 2 will add in-app editing (POST /api/tracker with a surgical block
+// write to the Active table). The add/edit modal and its handlers were
+// removed in Phase 1 to keep the tracker a faithful read-only view of the MD.
 
 // ─── Utilities ─────────────────────────────────────────────
 
@@ -807,7 +854,6 @@ function slugify(str) {
 
 document.addEventListener('DOMContentLoaded', () => {
   loadNarrative();
-  loadTracker();
   loadJDDraft();
 
   // Update home CTA if narrative exists
@@ -817,16 +863,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   renderWizard();
-  renderTracker();
+  loadTracker(); // async fetch of /api/tracker, then renders
   showSection('home');
-
-  // Close modal on backdrop click
-  document.getElementById('entry-modal').addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeModal();
-  });
-
-  // Escape key closes modal
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeModal();
-  });
 });

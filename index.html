@@ -23,7 +23,7 @@
       <button class="nav-btn"        data-section="narrative" onclick="showSection('narrative'); showNarrativeSection()">Narrative</button>
       <button class="nav-btn"        data-section="jobs"      onclick="showSection('jobs'); initJobs()">Jobs</button>
       <button class="nav-btn"        data-section="jd"        onclick="showSection('jd')">JD Analysis</button>
-      <button class="nav-btn"        data-section="tracker"   onclick="showSection('tracker')">Tracker</button>
+      <button class="nav-btn"        data-section="tracker"   onclick="showSection('tracker'); loadTracker()">Tracker</button>
     </nav>
   </header>
 
@@ -184,85 +184,42 @@
       <div class="tracker-actions">
         <div class="section-header" style="margin-bottom:0;">
           <h2>Tracker</h2>
-          <p>Log every application. Export to Markdown anytime.</p>
-        </div>
-        <div style="display:flex;gap:var(--space-3);">
-          <button class="btn btn-ghost btn-sm" onclick="exportTrackerMD()">Export MD</button>
-          <button class="btn btn-primary" onclick="openAddModal()">+ Add application</button>
+          <p>A live, read-only view of <code>private/tracker.md</code>.</p>
         </div>
       </div>
 
-      <div id="tracker-empty" class="tracker-empty">
-        No applications logged yet. Add your first one.
+      <div id="tracker-phase-note" class="tracker-phase-note">
+        Editing lands in Phase 2 — edit <code>private/tracker.md</code> directly for now.
       </div>
 
-      <table id="tracker-table" aria-label="Applications">
-        <thead>
-          <tr>
-            <th>Company</th>
-            <th>Role</th>
-            <th>Channel</th>
-            <th>Applied</th>
-            <th>Status</th>
-            <th>Next action</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="tracker-body"></tbody>
-      </table>
+      <div id="tracker-status" class="tracker-status"></div>
+
+      <div id="tracker-empty" class="tracker-empty" style="display:none;">
+        Nothing in the tracker yet. Add rows to <code>private/tracker.md</code>.
+      </div>
+
+      <div id="tracker-content">
+
+        <div class="tracker-table-block">
+          <h3 class="tracker-table-title">Active</h3>
+          <div id="tracker-active-body" class="tracker-card-list" aria-label="Active applications"></div>
+        </div>
+
+        <div class="tracker-table-block">
+          <h3 class="tracker-table-title">Closed</h3>
+          <div id="tracker-closed-body" class="tracker-card-list" aria-label="Closed applications"></div>
+        </div>
+
+        <div class="tracker-table-block">
+          <h3 class="tracker-table-title">Patterns</h3>
+          <div id="tracker-patterns" class="tracker-patterns"></div>
+        </div>
+
+      </div>
 
     </section>
 
   </main>
-</div>
-
-<!-- ── Add/Edit Application Modal ─────────────────────────── -->
-<div id="entry-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-  <div class="modal">
-    <h3 id="modal-title">Add application</h3>
-
-    <div class="field-row">
-      <div class="field">
-        <label for="entry_company">Company</label>
-        <input type="text" id="entry_company" placeholder="Huge">
-      </div>
-      <div class="field">
-        <label for="entry_role">Role title</label>
-        <input type="text" id="entry_role" placeholder="Visual Design Lead">
-      </div>
-    </div>
-
-    <div class="field-row">
-      <div class="field">
-        <label for="entry_channel">Channel</label>
-        <input type="text" id="entry_channel" placeholder="cold / warm / referral / recruiter">
-      </div>
-      <div class="field">
-        <label for="entry_applied">Date applied</label>
-        <input type="text" id="entry_applied">
-      </div>
-    </div>
-
-    <div class="field">
-      <label for="entry_status">Status</label>
-      <input type="text" id="entry_status" placeholder="researching / applied / screen / interviews / offer / rejected / ghosted">
-    </div>
-
-    <div class="field">
-      <label for="entry_next">Next action</label>
-      <input type="text" id="entry_next" placeholder="Follow up Friday. Prep portfolio review.">
-    </div>
-
-    <div class="field">
-      <label for="entry_notes">Notes</label>
-      <textarea id="entry_notes" rows="3" placeholder="Warm referral from Nina. Motion gap flagged. Probe comp in first screen."></textarea>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveEntry()">Save</button>
-    </div>
-  </div>
 </div>
 
 <script src="app.js"></script>

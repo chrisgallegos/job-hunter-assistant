@@ -460,6 +460,147 @@ tr:hover td { background: var(--surface); }
   color: var(--text-secondary);
 }
 
+.tracker-phase-note {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.tracker-phase-note code,
+.tracker-status code { font-family: var(--font-mono); }
+
+.tracker-status {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+}
+.tracker-status:empty { display: none; }
+
+.tracker-table-block { margin-bottom: var(--space-10); }
+
+.tracker-table-title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-medium);
+  margin-bottom: var(--space-3);
+}
+
+/* ─── Tracker cards ──────────────────────────────────────── */
+
+.tracker-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tracker-card-empty {
+  font-size: var(--text-sm);
+  padding: var(--space-4);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  margin: 0;
+}
+
+.tracker-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-6);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+.tracker-card:hover { background: var(--surface); }
+.tracker-card a { color: var(--accent, var(--text-primary)); }
+
+/* Header: company prominent, role beside it; wraps under on narrow widths. */
+.tracker-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+}
+
+.tracker-card-company {
+  font-weight: var(--font-bold);
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.tracker-card-role {
+  color: var(--text-secondary);
+}
+
+/* Meta line: compact labeled facts that wrap freely, stacking on mobile. */
+.tracker-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.tracker-meta-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  min-width: 0;
+}
+
+.tracker-meta-label,
+.tracker-line-label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+/* Next action: its own line. */
+.tracker-card-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.tracker-line-val { color: var(--text-primary); min-width: 0; }
+
+/* Full-width block — the "pseudo-row within the row": Notes / What I learned. */
+.tracker-card-block {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.tracker-block-val {
+  margin-top: var(--space-1);
+  color: var(--text-primary);
+  line-height: var(--leading-normal);
+}
+.tracker-block-val a { color: var(--accent, var(--text-primary)); }
+
+.tracker-patterns {
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: var(--text-primary);
+}
+.tracker-patterns h3,
+.tracker-patterns h4,
+.tracker-patterns h5,
+.tracker-patterns h6 {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  margin: var(--space-4) 0 var(--space-2);
+}
+.tracker-patterns p { margin: 0 0 var(--space-3); }
+.tracker-patterns ul { margin: 0 0 var(--space-3) var(--space-5); }
+.tracker-patterns li { margin-bottom: var(--space-1); }
+.tracker-patterns code { font-family: var(--font-mono); font-size: 0.9em; }
+
 /* ─── Modal ──────────────────────────────────────────────── */
 
 .modal-backdrop {
