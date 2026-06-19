@@ -281,6 +281,7 @@ SOURCE_COST = {
     "lever": 0,
     "ashby": 0,
     "bamboohr": 0,  # canonical company ATS — was missing; lost ties to remoteok
+    "workable": 0,  # canonical company ATS (public widget API)
     "remotive": 1,
     "weworkremotely": 1,
     "remoteok": 2,  # pay-to-play; deprioritize

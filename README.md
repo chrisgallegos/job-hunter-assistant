@@ -26,7 +26,7 @@ python3 serve.py
 ```
 
 **What happens:**
-- The scraper pulls from Greenhouse, Lever, Ashby company boards + RemoteOK, Remotive, WeWorkRemotely feeds
+- The scraper pulls from Greenhouse, Lever, Ashby, BambooHR, Workable company boards + RemoteOK, Remotive, WeWorkRemotely feeds
 - Postings are filtered by your watchlist, scored by relevance, and saved to `private/jobs/`
 - Each posting gets a card with Analyze (→ JD Analysis form), Track (→ application log), View (→ original), Dismiss (→ learnings)
 - Dismissed reasons accumulate — periodically ask your AI to read them and suggest watchlist refinements
@@ -146,7 +146,7 @@ The keyword score alone is useful. Verdicts are an optional layer, not a require
 
 ## How the scraper works
 
-**Sources:** Greenhouse, Lever, Ashby (company job boards); Remotive, RemoteOK, WeWorkRemotely (job feeds).
+**Sources:** Greenhouse, Lever, Ashby, BambooHR, Workable (company job boards); Remotive, RemoteOK, WeWorkRemotely (job feeds). Company boards are treated as canonical — when the same role appears on a board and a pay-to-play feed, the board version wins and the feed copy rides along as "also listed on."
 
 **Watchlist** (`private/watchlist.md` — you customize this):
 ```markdown
@@ -210,7 +210,7 @@ The keyword score alone is useful. Verdicts are an optional layer, not a require
 - Example watchlist (no real companies yet — you customize it)
 
 **Data flow:**
-1. Scraper → pulls from public job boards (Greenhouse, Lever, Ashby, Remotive, RemoteOK, WeWorkRemotely)
+1. Scraper → pulls from public job boards (Greenhouse, Lever, Ashby, BambooHR, Workable, Remotive, RemoteOK, WeWorkRemotely)
 2. Server → local only, binds 127.0.0.1, never broadcasts
 3. App → reads/writes your private/ folder via the server
 4. Your AI → reads/writes `private/` directly (AI coding assistant) or via copy-paste (chat) — same file contract either way, no API account required
