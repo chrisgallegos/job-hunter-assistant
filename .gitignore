@@ -27,23 +27,32 @@ private/*
 # OS AND TOOL NOISE
 # ═══════════════════════════════════════════════════════════════════════════
 
-.DS_Store                  # macOS metadata
-Thumbs.db                  # Windows metadata
-__pycache__/               # Python bytecode
-*.pyc                      # Compiled Python
-.venv/                     # Virtual env (if you use one)
-*.egg-info/                # Python packaging
+# NOTE: .gitignore does NOT support inline (end-of-line) comments —
+# put each comment on its own line, or the pattern won't match.
+
+# macOS metadata
+.DS_Store
+# Windows metadata
+Thumbs.db
+# Python bytecode, compiled files, virtual env, packaging
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
 
 # ═══════════════════════════════════════════════════════════════════════════
 # EDITOR AND IDE
 # ═══════════════════════════════════════════════════════════════════════════
 
-.vscode/                   # VS Code settings (you customize locally)
-.idea/                     # JetBrains IDE
-*.swp                      # Vim
-*.swo                      # Vim
-*~                         # Emacs
-.DS_Store                  # macOS
+# VS Code settings (you customize locally)
+.vscode/
+# JetBrains IDE
+.idea/
+# Vim swap files
+*.swp
+*.swo
+# Emacs backups
+*~
 
 # ═══════════════════════════════════════════════════════════════════════════
 # OPTIONAL: IF YOU MODIFY THE SCRAPER TO WRITE ELSEWHERE
