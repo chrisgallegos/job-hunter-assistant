@@ -749,10 +749,33 @@ tr:hover td { background: var(--surface); }
 
 .job-card-identity { margin-bottom: var(--space-3); }
 
+.job-card-title-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
 .job-card-title {
   font-weight: var(--font-bold);
   letter-spacing: -0.01em;
-  margin-bottom: var(--space-1);
+}
+
+/* "Applied" status stamp: a calm "you've handled this" signal near the title.
+   Reuses the chip shape but stays subtle — not a call to action. */
+.job-card-applied-badge {
+  color: var(--text-secondary);
+  background: var(--surface);
+  border-color: var(--border);
+  font-weight: var(--font-medium);
+  align-self: center;
+}
+
+/* Closed-tracker variant: further de-emphasized — it's settled history. */
+.job-card-applied-badge-closed {
+  color: var(--text-muted);
+  opacity: 0.8;
 }
 
 .job-card-company {

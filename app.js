@@ -542,6 +542,22 @@ function tierChip(tier) {
   return `<span class="job-card-chip job-card-tier-chip" title="${escHtml('Watchlist tier: ' + tier)}">${escHtml(label)}</span>`;
 }
 
+// "Applied" status stamp: a calm, scannable signal that this posting is already
+// in the tracker. Defensive — returns '' when posting.applied is absent.
+function appliedBadge(applied) {
+  if (!applied || typeof applied !== 'object') return '';
+  const date = applied.date ? String(applied.date).trim() : '';
+  let status = applied.status ? String(applied.status).trim() : '';
+  // Don't echo a status that just repeats the badge word ("Applied · Applied").
+  if (status.toLowerCase() === 'applied') status = '';
+  const tipParts = ['Applied', date, status].filter(Boolean);
+  const tip = tipParts.length > 1
+    ? tipParts[0] + ' ' + tipParts.slice(1).join(' · ')
+    : 'Applied';
+  const closed = applied.section === 'closed' ? ' job-card-applied-badge-closed' : '';
+  return `<span class="job-card-chip job-card-applied-badge${closed}" title="${escHtml(tip)}">✓ Applied</span>`;
+}
+
 function renderJobs(statusMsg) {
   document.getElementById('jobs-status').textContent = statusMsg || '';
   jobsData.sort((a, b) => combinedScore(b) - combinedScore(a));
@@ -554,12 +570,16 @@ function renderJobs(statusMsg) {
     const chips = j.chips || [];
     const tierChipHtml = tierChip(j.tier);
     const alsoOnHtml = alsoOnRow(j.also_on);
+    const appliedBadgeHtml = appliedBadge(j.applied);
 
     return `
     <div class="job-card">
       <div class="job-card-body">
         <div class="job-card-identity">
-          <div class="job-card-title">${escHtml(j.title)}</div>
+          <div class="job-card-title-row">
+            <div class="job-card-title">${escHtml(j.title)}</div>
+            ${appliedBadgeHtml}
+          </div>
           <div class="job-card-company">
             <span class="job-card-co-name">${escHtml(j.company)}</span>
           </div>

@@ -47,6 +47,66 @@ def with_verdicts(latest):
     return latest
 
 
+def _shares_long_token(a, b):
+    """True if normalized strings a and b share a token of length >= 4."""
+    return bool({t for t in a.split() if len(t) >= 4}
+                & {t for t in b.split() if len(t) >= 4})
+
+
+def with_applied(payload):
+    """Annotate each posting with tracker provenance — mirrors with_verdicts().
+
+    For every posting that matches a row in private/tracker.md (active or
+    closed), set posting["applied"] = {date, status, section}. No match
+    leaves the key absent (absent = not applied).
+
+    Matching is deliberately conservative: we prefer FALSE NEGATIVES over
+    false positives. A wrong "Applied" mark misleads worse than a missed
+    one, so the title test stays strict (equality or containment, never
+    mere token overlap), while the company test tolerates aliasing."""
+    tracker = parse_tracker()
+    index = []  # (nc, nt, info)
+    for row in tracker.get("active", []):
+        index.append((
+            scrape._norm(row.get("company", "")),
+            scrape._norm(row.get("role", "")),
+            {"date": row.get("applied", ""),
+             "status": row.get("status") or "Applied",
+             "section": "active"},
+        ))
+    for row in tracker.get("closed", []):
+        index.append((
+            scrape._norm(row.get("company", "")),
+            scrape._norm(row.get("role", "")),
+            {"date": row.get("applied", ""),
+             "status": row.get("outcome") or "Applied",
+             "section": "closed"},
+        ))
+
+    for posting in payload.get("postings", []):
+        pc = scrape._norm(posting.get("company", ""))
+        pt = scrape._norm(posting.get("title", ""))
+        best = None
+        for nc, nt, info in index:
+            company_ok = pc and nc and (
+                pc in nc or nc in pc or _shares_long_token(pc, nc))
+            # Equality only — NO containment. _norm collapses some titles to
+            # short generic stems (e.g. "Designer Freelance" -> "designer"),
+            # and containment let those falsely match longer roles at a
+            # company sharing one token. Equality keeps us in the
+            # false-negatives-over-false-positives lane we want.
+            title_ok = pt and nt and pt == nt
+            if not (company_ok and title_ok):
+                continue
+            if best is None:
+                best = info
+            elif best["section"] != "active" and info["section"] == "active":
+                best = info  # prefer an active row over a closed one
+        if best is not None:
+            posting["applied"] = best
+    return payload
+
+
 TRACKER = scrape.ROOT / "private" / "tracker.md"
 
 # Column orders match the file; values pass through verbatim (markdown,
@@ -149,7 +209,8 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path == "/api/jobs":
             latest = scrape.JOBS_DIR / "latest.json"
             if latest.exists():
-                return self.send_json(with_verdicts(json.loads(latest.read_text())))
+                return self.send_json(
+                    with_applied(with_verdicts(json.loads(latest.read_text()))))
             return self.send_json({"generated": None, "postings": []})
 
         if self.path == "/api/verdicts":
@@ -193,7 +254,7 @@ class Handler(SimpleHTTPRequestHandler):
             latest = json.loads((scrape.JOBS_DIR / "latest.json").read_text())
             latest["log"] = log
             latest["new"] = len(results)
-            return self.send_json(with_verdicts(latest))
+            return self.send_json(with_applied(with_verdicts(latest)))
 
         if self.path == "/api/dismiss":
             url = body.get("url", "")
