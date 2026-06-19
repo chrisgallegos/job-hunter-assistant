@@ -798,6 +798,34 @@ tr:hover td { background: var(--surface); }
   color: var(--text-muted);
 }
 
+/* "Also listed on": secondary, muted row of aggregator links. Clearly
+   subordinate to the primary canonical View link. */
+.job-card-also-on {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+.job-card-also-on a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+}
+
+.job-card-also-on a:hover {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-muted);
+}
+
+/* Watchlist-tier chip: a "why this surfaced" signal. Shares the chip shape
+   but uses a subtle accent outline to distinguish it from keyword chips. */
+.job-card-tier-chip {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  font-weight: var(--font-medium);
+}
+
 .job-score-col {
   grid-area: score;
   display: flex;

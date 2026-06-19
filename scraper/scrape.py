@@ -79,18 +79,31 @@ def html_to_text(value):
 
 def parse_watchlist(path):
     """Sections are '## ' headings; entries are '- ' list items.
-    Companies may pin a source: '- epicgames (greenhouse)'."""
+    Companies may pin a source: '- epicgames (greenhouse)'.
+
+    Inside '## Companies', '### ' sub-headers act as company tiers: each
+    company slug listed under one is tagged with that sub-header's text
+    (lowercased) so scoring can boost priority tiers."""
     sections = {}
     current = None
+    company_tiers = {}   # slug -> tier label (lowercased '### ' sub-header)
+    current_tier = ""    # the '### ' sub-header in effect while in Companies
     for line in path.read_text().splitlines():
         line = line.strip()
         if line.startswith("## "):
             current = line[3:].strip().lower()
             sections[current] = []
+            current_tier = ""   # reset tier on every new top-level section
+        elif line.startswith("### ") and current == "companies":
+            current_tier = line[4:].strip().lower()
         elif line.startswith("- ") and current:
             entry = line[2:].split("#")[0].strip()
             if entry:
                 sections[current].append(entry)
+                if current == "companies":
+                    match = re.match(r"^(\S+)", entry)
+                    if match:
+                        company_tiers[match.group(1)] = current_tier
 
     def slug_entries(key):
         entries = []
@@ -103,6 +116,20 @@ def parse_watchlist(path):
     def lowered(key):
         return [e.lower() for e in sections.get(key, [])]
 
+    def tier_boosts(key):
+        """'- keyword: N' lines -> [(keyword_lowercased, int_points)].
+        Absent section or malformed lines yield nothing (backward compat)."""
+        boosts = []
+        for entry in sections.get(key, []):
+            kw, sep, pts = entry.partition(":")
+            if not sep:
+                continue
+            try:
+                boosts.append((kw.strip().lower(), int(pts.strip())))
+            except ValueError:
+                continue
+        return boosts
+
     return {
         "companies": slug_entries("companies"),
         "feeds": slug_entries("feeds"),
@@ -112,6 +139,8 @@ def parse_watchlist(path):
         "department_excludes": lowered("department excludes"),
         "boost_keywords": lowered("boost keywords"),
         "locations": lowered("locations"),
+        "company_tiers": company_tiers,
+        "tier_boosts": tier_boosts("company tier boosts"),
     }
 
 
@@ -177,6 +206,16 @@ def score(posting, criteria):
     ))
     if posting["remote"]:
         points += 1
+    # Company-tier membership boost: a thumb on the scale for priority
+    # tiers. Title/seniority above remain the fundamentals — this only
+    # adds the LARGEST matching tier_boost (substring on the tier label),
+    # never a sum, so one company can't run away with the ranking.
+    tier = (posting.get("tier") or "").lower()
+    if tier:
+        matches = [pts for kw, pts in criteria.get("tier_boosts", [])
+                   if kw in tier]
+        if matches:
+            points += max(matches)
     return points
 
 
@@ -228,26 +267,56 @@ def compute_chips(posting, criteria):
     return chips[:5]
 
 
-# Source hierarchy: free platforms > paid feeds.
-# When the same job appears on multiple sources, prefer the free version.
+# Source hierarchy: "closest to source wins." When the same role surfaces
+# on multiple sources, the user sees the most canonical one; aggregators
+# survive only when they're the lone source (still valuable then).
+#   0 = canonical company ATS (closest to source)
+#   1 = free aggregator feed
+#   2 = pay-to-play aggregator (round-about; diffuses good results)
+# IMPORTANT: every company-board adapter in sources/ MUST be listed here
+# at cost 0. A canonical source missing from this table defaults to 99
+# and would wrongly LOSE a dedup tie to a pay-to-play aggregator.
 SOURCE_COST = {
     "greenhouse": 0,
     "lever": 0,
     "ashby": 0,
+    "bamboohr": 0,  # canonical company ATS — was missing; lost ties to remoteok
     "remotive": 1,
     "weworkremotely": 1,
     "remoteok": 2,  # pay-to-play; deprioritize
 }
 
 
+# Location / employment qualifiers aggregators bolt onto titles. Stripped
+# from dedup keys so "Staff Designer" matches "Staff Designer (USA - Remote)"
+# WITHOUT dropping meaningful role qualifiers like "(Developer Success)".
+_NOISE_TOKENS = {
+    "remote", "hybrid", "onsite", "contract", "contractor", "freelance",
+    "fulltime", "parttime", "temporary", "temp", "intern", "internship",
+    "usa", "us", "emea", "apac", "uk", "eu", "anywhere",
+}
+
+
+def _norm(text):
+    """Normalize for dedup: lowercase, parentheses->spaces (keep contents),
+    punctuation->spaces, drop location/employment noise tokens, collapse."""
+    text = text.lower().replace("full-time", "fulltime").replace("part-time", "parttime")
+    text = re.sub(r"[^a-z0-9]+", " ", text)          # punctuation/parens -> space
+    tokens = [t for t in text.split() if t not in _NOISE_TOKENS]
+    return " ".join(tokens).strip()
+
+
 def posting_dedup_key(posting):
     """Normalize company + title for cross-source dedup.
-    Two postings with the same key are considered the same role."""
-    co = posting["company"].lower().strip()
-    ti = posting["title"].lower().strip()
-    # Remove common qualifiers
-    ti = ti.replace("(contract)", "").replace("(part-time)", "").strip()
-    return f"{co}|{ti}"
+    Two postings with the same key are considered the same role.
+
+    Aggregators munge titles (drop commas, append "(USA/EMEA - Remote)",
+    etc.), so we normalize punctuation and parentheticals before comparing.
+    Without this, the canonical/aggregator pair fails to match and BOTH
+    survive dedup, defeating the source hierarchy. Known limitation:
+    company-name aliases (e.g. "Penn Interactive" vs "PENN Entertainment")
+    still won't match — that needs an alias map, not normalization."""
+    return f"{_norm(posting['company'])}|{_norm(posting['title'])}"
 
 
 def parse_posted(posting):
@@ -315,6 +384,8 @@ def write_latest_json(results, today, days, criteria):
             "source": posting["source"],
             "posted": posted.date().isoformat() if posted else None,
             "score": points,
+            "tier": posting.get("tier", ""),
+            "also_on": posting.get("also_on", []),
             "chips": compute_chips(posting, criteria),
             "file": str(file_path.relative_to(ROOT)),
             "description": html_to_text(posting["description"]),
@@ -485,11 +556,14 @@ def scan(days=7, rescan=False, company=None, source=None, log=None):
     fresh = []
     seen_urls_this_run = set()
 
-    def consider(postings):
+    def consider(postings, tier=""):
         for posting in postings:
             url = posting["url"]
             if not url or url in seen_urls_this_run or url in dismissed:
                 continue
+            # Tag with the watchlist tier BEFORE scoring so the membership
+            # boost can fire. Feeds/aggregators pass tier="" (no boost).
+            posting["tier"] = tier
             if not passes_filters(posting, criteria):
                 continue
             posted = parse_posted(posting)
@@ -514,7 +588,7 @@ def scan(days=7, rescan=False, company=None, source=None, log=None):
         else:
             log(f"{slug}: no board found on any source")
             continue
-        consider(postings)
+        consider(postings, tier=criteria["company_tiers"].get(slug, ""))
 
     feed_modules = get_feeds()
     for name, arg in criteria["feeds"]:
@@ -527,9 +601,12 @@ def scan(days=7, rescan=False, company=None, source=None, log=None):
         log(f"{label}: {len(postings)} postings")
         consider(postings)
 
-    # Dedup across sources: keep the free version when the same job
-    # surfaces on multiple platforms.
+    # Dedup across sources: keep the most-canonical version when the same
+    # job surfaces on multiple platforms. The losers aren't discarded —
+    # they ride along on the winner as `also_on` so the UI can show that a
+    # canonical role is also listed on aggregators.
     deduped = {}  # key -> (posting, points)
+    duplicates = {}  # key -> [losing posting, ...]
     for posting, points in fresh:
         key = posting_dedup_key(posting)
         if key in deduped:
@@ -541,9 +618,30 @@ def scan(days=7, rescan=False, company=None, source=None, log=None):
             if new_cost < existing_cost or (
                 new_cost == existing_cost and points > existing_points
             ):
+                duplicates.setdefault(key, []).append(existing_posting)
                 deduped[key] = (posting, points)
+            else:
+                duplicates.setdefault(key, []).append(posting)
         else:
             deduped[key] = (posting, points)
+
+    # Attach also_on: only duplicates whose source is less-or-equally
+    # canonical than the winner (cost >= winner's), de-duped by url and
+    # sorted by SOURCE_COST then url. The winner never appears in its own.
+    for key, (winner, _winner_points) in deduped.items():
+        winner_cost = SOURCE_COST.get(winner["source"], 99)
+        seen_urls = {winner["url"]}
+        also = []
+        for loser in duplicates.get(key, []):
+            loser_cost = SOURCE_COST.get(loser["source"], 99)
+            if loser_cost < winner_cost:
+                continue
+            if loser["url"] in seen_urls:
+                continue
+            seen_urls.add(loser["url"])
+            also.append({"source": loser["source"], "url": loser["url"]})
+        also.sort(key=lambda d: (SOURCE_COST.get(d["source"], 99), d["url"]))
+        winner["also_on"] = also
 
     fresh = list(deduped.values())
     fresh.sort(key=lambda pair: (-pair[1], pair[0]["title"]))

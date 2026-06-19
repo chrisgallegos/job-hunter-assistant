@@ -493,6 +493,55 @@ function extractEmploymentType(desc) {
   return m ? m[1].toLowerCase().replace('-', ' ') : null;
 }
 
+// Human-friendly names for aggregator sources surfaced in `posting.also_on`.
+// Falls back to capitalizing the raw value for anything not in the map.
+function prettySource(raw) {
+  if (!raw) return '';
+  const key = String(raw).trim().toLowerCase().replace(/[\s_-]/g, '');
+  const map = {
+    remoteok: 'RemoteOK',
+    weworkremotely: 'WeWorkRemotely',
+    remotive: 'Remotive',
+  };
+  if (map[key]) return map[key];
+  const s = String(raw).trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// "Also listed on" row: secondary, muted links to the same role on
+// less-canonical aggregator boards. De-dupes by display name. Returns ''
+// when `also_on` is missing/empty so no row renders.
+function alsoOnRow(alsoOn) {
+  if (!Array.isArray(alsoOn) || alsoOn.length === 0) return '';
+  const seen = new Set();
+  const links = [];
+  for (const entry of alsoOn) {
+    if (!entry || !entry.source || !entry.url) continue;
+    const name = prettySource(entry.source);
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    links.push(`<a href="${escHtml(entry.url)}" target="_blank" rel="noopener">${escHtml(name)}</a>`);
+  }
+  if (!links.length) return '';
+  return `<div class="job-card-also-on">Also on: ${links.join(' · ')}</div>`;
+}
+
+// Short watchlist-tier chip: signals *why this surfaced* (a watchlist
+// preference), distinct from keyword chips. Maps the tier text to a short
+// label by substring; returns '' (no chip) when nothing matches or absent.
+function tierChip(tier) {
+  if (!tier || typeof tier !== 'string') return '';
+  const t = tier.toLowerCase();
+  let label = '';
+  if (t.includes('gaming')) label = 'Gaming';
+  else if (t.includes('entertainment')) label = 'Entertainment';
+  else if (t.includes('design-systems') || t.includes('design systems')) label = 'Design systems';
+  else if (t.includes('agenc') || t.includes('consultanc')) label = 'Agency';
+  else if (t.includes('seattle') || t.includes('bellevue') || t.includes('redmond')) label = 'Seattle area';
+  if (!label) return '';
+  return `<span class="job-card-chip job-card-tier-chip" title="${escHtml('Watchlist tier: ' + tier)}">${escHtml(label)}</span>`;
+}
+
 function renderJobs(statusMsg) {
   document.getElementById('jobs-status').textContent = statusMsg || '';
   jobsData.sort((a, b) => combinedScore(b) - combinedScore(a));
@@ -503,6 +552,8 @@ function renderJobs(statusMsg) {
     const locWithSalary = [locParts, salary ? `<span class="job-card-salary-inline">${escHtml(salary)}</span>` : null].filter(Boolean).join(' · ');
     const excerpt = extractExcerpt(j.description);
     const chips = j.chips || [];
+    const tierChipHtml = tierChip(j.tier);
+    const alsoOnHtml = alsoOnRow(j.also_on);
 
     return `
     <div class="job-card">
@@ -516,6 +567,7 @@ function renderJobs(statusMsg) {
             ${locWithSalary ? `<span class="job-card-location">${locWithSalary}</span>` : ''}
             <span class="job-card-provenance">${j.posted ? j.posted : 'Undated'} · ${escHtml(j.source)}</span>
           </div>
+          ${alsoOnHtml}
         </div>
         ${excerpt ? `<div class="job-card-excerpt">${escHtml(excerpt)}</div>` : ''}
         ${j.verdict && j.verdict.why ? `<div class="job-card-verdict"><em class="job-card-verdict-attr">Claude's read</em>${escHtml(j.verdict.why)}</div>` : ''}
@@ -527,7 +579,7 @@ function renderJobs(statusMsg) {
             <span class="material-symbols-rounded">close</span>
           </button>
         </div>
-        ${chips.length ? `<div class="job-card-chips">${chips.map(c => `<span class="job-card-chip">${escHtml(c)}</span>`).join('')}</div>` : ''}
+        ${(chips.length || tierChipHtml) ? `<div class="job-card-chips">${tierChipHtml}${chips.map(c => `<span class="job-card-chip">${escHtml(c)}</span>`).join('')}</div>` : ''}
       </div>
       ${scoreCol(j)}
       <div class="job-card-action-bar">

@@ -1,12 +1,6 @@
 {
   "version": "0.0.1",
   "configurations": [
-    {
-      "name": "job-hunter-toolkit",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["serve.py", "--no-browser"],
-      "port": 4242,
-      "autoPort": true
-    }
+    { "name": "toolkit", "runtimeExecutable": "python3", "runtimeArgs": ["serve.py"], "port": 8765 }
   ]
 }
