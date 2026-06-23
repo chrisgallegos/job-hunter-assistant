@@ -282,6 +282,7 @@ SOURCE_COST = {
     "ashby": 0,
     "bamboohr": 0,  # canonical company ATS — was missing; lost ties to remoteok
     "workable": 0,  # canonical company ATS (public widget API)
+    "publicis": 0,  # canonical multi-brand board (Jibe/iCIMS), Creative facet
     "remotive": 1,
     "weworkremotely": 1,
     "remoteok": 2,  # pay-to-play; deprioritize
@@ -685,8 +686,11 @@ def main():
                         help="check which ATS hosts a company, then exit")
     parser.add_argument("--company", metavar="SLUG",
                         help="scrape a single company instead of the watchlist")
-    parser.add_argument("--source", choices=["greenhouse", "lever", "ashby"],
-                        help="pin the ATS for --company")
+    parser.add_argument(
+        "--source",
+        choices=["greenhouse", "lever", "ashby", "bamboohr",
+                 "workable", "publicis"],
+        help="pin the ATS for --company")
     args = parser.parse_args()
 
     if args.probe:

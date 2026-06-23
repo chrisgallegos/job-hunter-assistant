@@ -34,11 +34,12 @@ def get_json(url):
 
 
 def get_sources():
-    from . import greenhouse, lever, ashby, bamboohr, workable
+    from . import greenhouse, lever, ashby, bamboohr, workable, publicis
     return {
         "greenhouse": greenhouse,
         "lever":      lever,
         "ashby":      ashby,
         "bamboohr":   bamboohr,
         "workable":   workable,
+        "publicis":   publicis,
     }
