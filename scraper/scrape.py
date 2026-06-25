@@ -158,6 +158,81 @@ def kw_match(kw, text):
     return kw in text
 
 
+# ─── Geography: keep US / unknown, drop international-"remote" ────────
+# "Remote" alone shouldn't wave a role through the location gate when it's
+# based in a market you can't realistically work from the US (Beirut,
+# Dubai, Johannesburg...). Bias is FAIL-OPEN: a US signal — or simply no
+# recognizable foreign market — keeps the posting for human judgment. We
+# only drop when the location clearly names a non-US market AND offers no
+# US option. US signals take precedence, which also resolves the namesake
+# traps (Ontario/London/Toronto all exist in the US too).
+_US_STATES = (
+    "alabama", "alaska", "arizona", "arkansas", "california", "colorado",
+    "connecticut", "delaware", "florida", "hawaii", "idaho", "illinois",
+    "indiana", "iowa", "kansas", "kentucky", "louisiana", "maine",
+    "maryland", "massachusetts", "michigan", "minnesota", "mississippi",
+    "missouri", "montana", "nebraska", "nevada", "new hampshire",
+    "new jersey", "new mexico", "new york", "north carolina",
+    "north dakota", "ohio", "oklahoma", "oregon", "pennsylvania",
+    "rhode island", "south carolina", "south dakota", "tennessee",
+    "texas", "utah", "vermont", "virginia", "washington",
+    "west virginia", "wisconsin", "wyoming",
+)
+# "georgia" is omitted on purpose — it collides with the country, and
+# fail-open means a Tbilisi role merely survives for human review.
+_US_SIGNALS = frozenset(_US_STATES + (
+    "united states", "usa", "u.s.", "u.s", "u s a", "nationwide",
+    "anywhere in the us", "us only", "us-based", "us based", "remote us",
+))
+# "City, ST" — the reliable abbreviation shape. Anchored to a comma so we
+# never match a preposition ("in", "or") or a foreign substring
+# ("Rio de Janeiro" -> "de") and mistake it for a US state.
+_US_ABBR_RE = re.compile(
+    r",\s*(a[klrz]|c[aot]|d[ce]|fl|ga|hi|i[adln]|k[sy]|la|m[adeinost]"
+    r"|n[cdehjmvy]|o[hkr]|pa|ri|s[cd]|t[nx]|ut|v[at]|w[aivy])\b"
+)
+_FOREIGN_MARKERS = frozenset({
+    # The Americas (non-US) — incl. Canadian provinces, which post as
+    # bare "Alberta"/"British Columbia" with no city or country.
+    "canada", "ontario", "toronto", "vancouver", "montreal", "quebec",
+    "alberta", "british columbia", "saskatchewan", "manitoba",
+    "nova scotia", "new brunswick", "newfoundland", "calgary",
+    "edmonton", "ottawa", "winnipeg", "halifax",
+    "mexico", "brazil", "sao paulo", "argentina", "colombia", "bogota",
+    "chile", "peru", "costa rica", "heredia", "guatemala", "panama",
+    # Europe
+    "united kingdom", "england", "scotland", "wales", "london", "ireland",
+    "dublin", "germany", "berlin", "france", "paris", "spain", "madrid",
+    "barcelona", "portugal", "lisbon", "netherlands", "amsterdam",
+    "poland", "warsaw", "romania", "ukraine", "italy", "rome", "milan",
+    "sweden", "stockholm", "norway", "denmark", "finland", "switzerland",
+    "austria", "belgium", "czech", "greece",
+    # Middle East / Africa
+    "lebanon", "beirut", "dubai", "abu dhabi", "united arab emirates",
+    "uae", "qatar", "saudi", "egypt", "cairo", "israel", "tel aviv",
+    "turkey", "istanbul", "south africa", "johannesburg", "cape town",
+    "kenya", "nigeria", "lagos", "ghana", "morocco",
+    # Asia / Pacific
+    "india", "bangalore", "bengaluru", "mumbai", "delhi", "hyderabad",
+    "pakistan", "philippines", "manila", "singapore", "malaysia",
+    "indonesia", "vietnam", "thailand", "japan", "tokyo", "china",
+    "hong kong", "taiwan", "south korea", "australia", "sydney",
+    "melbourne", "new zealand",
+})
+
+
+def is_international(location):
+    """True only when a location names a non-US market and offers no US
+    option. US precedence keeps 'Ontario, CA' and multi-region strings
+    like 'Toronto; New York'. Fail-open: unknown or unmarked locations
+    are kept for human judgment, never silently dropped."""
+    if not location:
+        return False
+    if any(sig in location for sig in _US_SIGNALS) or _US_ABBR_RE.search(location):
+        return False
+    return any(marker in location for marker in _FOREIGN_MARKERS)
+
+
 def passes_filters(posting, criteria):
     title = posting["title"].lower()
     # Strong titles always satisfy the title gate; the generic includes
@@ -172,17 +247,18 @@ def passes_filters(posting, criteria):
         kw_match(kw, department) for kw in criteria["department_excludes"]
     ):
         return False
-    if criteria["locations"]:
-        location = posting["location"].lower()
+    location = posting["location"].lower()
+    targets = criteria["locations"]
+    wanted = bool(targets) and any(loc in location for loc in targets)
+    # International-"remote" guard: drop a role based abroad even when it's
+    # tagged remote — unless the user explicitly targets that location.
+    if not wanted and is_international(location):
+        return False
+    if targets:
         # "Multiple Locations" style values are unknowns, not mismatches —
         # they often include remote. Keep them for human judgment.
         vague = "multiple locations" in location or "flexible" in location
-        if not (
-            posting["remote"]
-            or not location
-            or vague
-            or any(loc in location for loc in criteria["locations"])
-        ):
+        if not (posting["remote"] or not location or vague or wanted):
             return False
     return True
 
