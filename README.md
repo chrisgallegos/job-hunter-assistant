@@ -238,6 +238,7 @@ templates/          Reusable MD templates — copy these into private/ and fill 
 docs/               Philosophy, methodology, setup guides
   philosophy.md             Why the "we" model works
   methodology.md            How the templates fit together
+  field-notes.md            Hard-won patterns from real searches (referral mechanics, title traps, the round table, references)
   facilitator-guide.md      Step-by-step for no-AI mode
   setup-and-modes.md        First-session prompts for Claude Code, chat, self-guided
 
@@ -370,6 +371,6 @@ MIT. Free for anyone to own and run. No conditions, no tracking.
 
 ## Questions?
 
-Check `docs/philosophy.md` for why the system is designed this way, or `docs/setup-and-modes.md` for first-session walkthroughs with Claude Code / chat / solo.
+Check `docs/philosophy.md` for why the system is designed this way, `docs/field-notes.md` for the hard-won patterns a real search teaches (referral mechanics, title traps, the round table, reference ethics), or `docs/setup-and-modes.md` for first-session walkthroughs with Claude Code / chat / solo.
 
 The entire system is intentionally transparent. Read the code. Change it. Break it. Make it yours.
