@@ -10,8 +10,8 @@ A portable, self-owned job search system built on plain Markdown files.
 
 ```bash
 # 1. Clone and enter the repo
-git clone https://github.com/chrisgallegos/job-hunter-toolkit.git
-cd job-hunter-toolkit
+git clone https://github.com/chrisgallegos/job-hunter-assistant.git
+cd job-hunter-assistant
 
 # 2. Copy the example watchlist and customize it
 cp scraper/watchlist.example.md private/watchlist.md

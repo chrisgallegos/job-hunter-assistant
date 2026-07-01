@@ -27,7 +27,7 @@ The files are always current.
    ```
 2. Open your terminal and navigate to this folder:
    ```
-   cd ~/Sites/job-hunter-toolkit
+   cd ~/Sites/job-hunter-assistant
    ```
 3. Start a session:
    ```
