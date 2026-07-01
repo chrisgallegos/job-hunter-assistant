@@ -274,8 +274,11 @@ private/            YOUR instance — gitignored, never published
     learnings.md            Accumulated dismissal patterns
     postings/               One MD file per posting (drop into JD Analysis)
 
+CLAUDE.md           Onboarding for AI coding assistants — constraints, the adapter contract, how to test
+CONTRIBUTING.md     What's welcome in a PR, code style, the fork-and-own philosophy
+SECURITY.md         Local-only threat model and what stays private
 .gitignore          Ensures private/ stays private
-LICENSE             MIT — fork it, own it
+LICENSE             MIT + a note on why it's open
 ```
 
 ---
@@ -303,6 +306,8 @@ Most AI job-search tools flip this: the AI thinks, you confirm. Here, the struct
 4. **Share learnings patterns** — if you find a pattern (e.g., "game design roles are 60% false positives for product designers"), document it for others
 
 The toolkit is not a platform; it's a starting point. Fork it, break it, rebuild it to fit your search.
+
+**Contributing with an AI?** Open the fork in Claude Code (or Cursor/Copilot) and it picks up `CLAUDE.md` automatically — the constraints, the source-adapter contract, and how to test are all there, so your assistant is oriented from the first message. `CONTRIBUTING.md` covers what belongs in the core vs. your own fork.
 
 ---
 
