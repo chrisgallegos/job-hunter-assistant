@@ -26,7 +26,7 @@ python3 serve.py
 ```
 
 **What happens:**
-- The scraper pulls from Greenhouse, Lever, Ashby, BambooHR, Workable company boards + RemoteOK, Remotive, WeWorkRemotely feeds
+- The scraper pulls from Greenhouse, Lever, Ashby, BambooHR, Workable, Workday, Eightfold, and Publicis company boards + RemoteOK, Remotive, WeWorkRemotely feeds
 - Postings are filtered by your watchlist, scored by relevance, and saved to `private/jobs/`
 - Each posting gets a card with Analyze (→ JD Analysis form), Track (→ application log), View (→ original), Dismiss (→ learnings)
 - Dismissed reasons accumulate — periodically ask your AI to read them and suggest watchlist refinements
@@ -122,7 +122,7 @@ Works anywhere. No setup. No code.
 ```bash
 python3 serve.py  # Local server, http://localhost:8765
 ```
-- Scraper pulls fresh postings from 6 sources every day (or on demand)
+- Scraper pulls fresh postings from eight company-board platforms + three feeds every day (or on demand)
 - App shows a live digest, scored and filtered by your watchlist
 - One-click Analyze/Track/Dismiss
 
@@ -146,7 +146,9 @@ The keyword score alone is useful. Verdicts are an optional layer, not a require
 
 ## How the scraper works
 
-**Sources:** Greenhouse, Lever, Ashby, BambooHR, Workable (company job boards); Remotive, RemoteOK, WeWorkRemotely (job feeds). Company boards are treated as canonical — when the same role appears on a board and a pay-to-play feed, the board version wins and the feed copy rides along as "also listed on."
+**Sources:** Greenhouse, Lever, Ashby, BambooHR, Workable, Workday, Eightfold, and the multi-brand Publicis board (company job boards); Remotive, RemoteOK, WeWorkRemotely (job feeds). Company boards are treated as canonical — when the same role appears on a board and a pay-to-play feed, the board version wins and the feed copy rides along as "also listed on."
+
+Most boards are slug-based (`epicgames`, `spotify`) and just work. Two need a one-time manual setup: **Workday** tenants (Adobe, Nordstrom, etc.) need their tenant/pod/site read off the real careers page, and **Eightfold** tenants need a quick curl to confirm the search API is open. Both are documented in `ideas/ats-platform-notes.md`.
 
 **Watchlist** (`private/watchlist.md` — you customize this):
 ```markdown
@@ -183,7 +185,7 @@ The keyword score alone is useful. Verdicts are an optional layer, not a require
 **Scoring:**
 - Base: title match (strong titles +3, includes +0, excludes drop to 0), seniority level (+2), boost keywords (up to +5), remote (+1)
 - AI layer: verdicts delta overrides or amplifies the base score
-- Dedup: when the same job appears on multiple sources, keeps the free platform version (Greenhouse/Lever/Ashby over RemoteOK's pay-to-play)
+- Dedup: when the same job appears on multiple sources, keeps the canonical company-board version (Greenhouse/Lever/Ashby/Workday/Eightfold/etc.) over RemoteOK's pay-to-play
 
 **Output:**
 - `private/jobs/digest-YYYY-MM-DD.md` — human-readable ranked list, Markdown export
@@ -210,7 +212,7 @@ The keyword score alone is useful. Verdicts are an optional layer, not a require
 - Example watchlist (no real companies yet — you customize it)
 
 **Data flow:**
-1. Scraper → pulls from public job boards (Greenhouse, Lever, Ashby, BambooHR, Workable, Remotive, RemoteOK, WeWorkRemotely)
+1. Scraper → pulls from public job boards (Greenhouse, Lever, Ashby, BambooHR, Workable, Workday, Eightfold, Publicis, Remotive, RemoteOK, WeWorkRemotely)
 2. Server → local only, binds 127.0.0.1, never broadcasts
 3. App → reads/writes your private/ folder via the server
 4. Your AI → reads/writes `private/` directly (AI coding assistant) or via copy-paste (chat) — same file contract either way, no API account required
@@ -245,7 +247,7 @@ docs/               Philosophy, methodology, setup guides
 scraper/            Job board scraper — pulls from public APIs, local only
   scrape.py                 CLI: python3 scraper/scrape.py [--days 7] [--rescan] ...
   serve.py                  Local server: python3 serve.py [--port 8765]
-  sources/                  Adapters: greenhouse.py, lever.py, ashby.py
+  sources/                  Company-board adapters: greenhouse, lever, ashby, bamboohr, workable, workday, eightfold, publicis
   feeds/                    Feed adapters: remotive.py, remoteok.py, weworkremotely.py
   watchlist.example.md      Template for your custom watchlist
 
@@ -253,10 +255,11 @@ index.html, app.js, app.css, tokens.css
                     Interactive app: run serve.py, opens at http://localhost:8765
                     Sections: Home, Narrative (wizard + portrait), JD Analysis, Jobs (scraper UI), Tracker
 
-ideas/              Designs for future layers
+ideas/              Designs for future layers + engineering notes
   career-coin.md            Portable career identity object (human + machine readable)
   interactive-site.md       Direction notes for the browser app
   scraper-architecture.md   Design sketch and deferred decisions
+  ats-platform-notes.md     Live-tested notes on adding ATS platforms (Workday, Eightfold): API shapes, quirks, gotchas
 
 private/            YOUR instance — gitignored, never published
   career-narrative.md       Filled-out version (you write this)
@@ -295,7 +298,7 @@ Most AI job-search tools flip this: the AI thinks, you confirm. Here, the struct
 ## For forkers: make it yours
 
 1. **Customize templates** — change the career narrative structure if your industry works differently, adapt the JD analysis for your targets
-2. **Extend the scraper** — add a new ATS adapter, a new feed source, or a dedup strategy that works better for your search
+2. **Extend the scraper** — add a new ATS adapter, a new feed source, or a dedup strategy that works better for your search. `ideas/ats-platform-notes.md` captures the hard-won findings behind the Workday and Eightfold adapters (API shapes, quirks, the check-the-real-page method) so you or your AI don't re-derive them
 3. **Tweak the watchlist** — company list, title filters, and boost keywords are all user-configurable
 4. **Share learnings patterns** — if you find a pattern (e.g., "game design roles are 60% false positives for product designers"), document it for others
 
@@ -351,7 +354,7 @@ cp templates/application-tracker.md private/tracker.md
 
 ## Troubleshooting
 
-**"No scans yet"** → Click "Scan now" (first scan takes ~30s as it checks 6 sources across dozens of companies)
+**"No scans yet"** → Click "Scan now" (first scan takes ~30s for a typical watchlist. Workday tenants are much slower — they page through the board one search term at a time — so a Workday-heavy watchlist can take a few minutes; that's expected, not a hang.)
 
 **"Watchlist has no companies"** → Edit `private/watchlist.md`, add companies under `## Companies`
 
@@ -365,7 +368,9 @@ cp templates/application-tracker.md private/tracker.md
 
 ## License
 
-MIT. Free for anyone to own and run. No conditions, no tracking.
+MIT. Free for anyone to own and run. No conditions, no tracking. The `LICENSE`
+file also carries a short note on why it's open — built with AI assistance, so
+it goes back out in the same spirit.
 
 ---
 
