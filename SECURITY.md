@@ -1,6 +1,6 @@
 # Security & Privacy
 
-This document explains how your data is protected in the Job Hunter Toolkit.
+This document explains how your data is protected in the Job Hunter Assistant.
 
 ## TL;DR
 
@@ -89,7 +89,7 @@ private/jobs/verdicts.json (written by you, pasted into the file)
 App merges verdicts into scoring
 ```
 
-**Your AI never talks to the toolkit:**
+**Your AI never talks to the assistant:**
 - No API calls back to the system
 - No server-to-API-service communication
 - You manually copy the verdicts file (or paste the content) — full control
@@ -211,7 +211,7 @@ If you're worried about compliance:
 
 ## Security is boring, which is good
 
-The job-hunter-toolkit uses no fancy crypto, no cloud APIs, no authentication. It's boring on purpose:
+The job-hunter-assistant uses no fancy crypto, no cloud APIs, no authentication. It's boring on purpose:
 
 - Boring = auditable
 - Auditable = trustworthy

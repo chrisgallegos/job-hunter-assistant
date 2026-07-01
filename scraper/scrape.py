@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Job Hunter Toolkit — scraping layer (rung three of the ladder).
+"""Job Hunter Assistant — scraping layer (rung three of the ladder).
 
 Pulls fresh postings straight from public ATS APIs (Greenhouse, Lever,
 Ashby, BambooHR, Workable, Workday, Eightfold, plus the bespoke

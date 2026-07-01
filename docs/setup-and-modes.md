@@ -1,6 +1,6 @@
-# Setup and Modes — How to Run the Toolkit
+# Setup and Modes — How to Run the Assistant
 
-The toolkit works in three distinct modes. Each one is fully functional.
+The assistant works in three distinct modes. Each one is fully functional.
 The difference is how much friction exists between the conversation and
 your files.
 
@@ -9,7 +9,7 @@ your files.
 ## Mode 1: Claude Code (recommended — highest fidelity)
 
 **What it is:** Claude Code is Anthropic's CLI tool that runs locally
-alongside your files. When you start a session from the toolkit
+alongside your files. When you start a session from the assistant
 directory, the AI has direct read/write access to everything in the
 project — including your `private/` folder.
 
@@ -118,8 +118,8 @@ use it in applications.
 | Analyzing a batch of job postings | Claude Code or Chat — both work, Code is faster |
 | Updating tracker after an application | Claude Code — one command, file updates immediately |
 | Traveling, no dev environment | Chat-based — paste and go |
-| Sharing the toolkit with someone non-technical | No AI or Chat — lower barrier to entry |
-| Running the toolkit on someone else's machine | Chat-based or No AI |
+| Sharing the assistant with someone non-technical | No AI or Chat — lower barrier to entry |
+| Running the assistant on someone else's machine | Chat-based or No AI |
 
 ---
 

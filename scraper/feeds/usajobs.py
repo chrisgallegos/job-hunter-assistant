@@ -9,7 +9,7 @@
 #     export USAJOBS_API_KEY="your-key-here"
 #     export USAJOBS_USER_AGENT="your@email.com"
 #
-#   Option 2 — private/usajobs.env file in the toolkit root:
+#   Option 2 — private/usajobs.env file in the assistant root:
 #     USAJOBS_API_KEY=your-key-here
 #     USAJOBS_USER_AGENT=your@email.com
 #
@@ -91,7 +91,7 @@ def fetch(arg=None):
     import time
 
     req = urllib.request.Request(url, headers={
-        "User-Agent": user_agent or "job-hunter-toolkit",
+        "User-Agent": user_agent or "job-hunter-assistant",
         "Authorization-Key": api_key,
         "Host": "data.usajobs.gov",
     })

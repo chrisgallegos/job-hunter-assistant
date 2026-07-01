@@ -9,7 +9,7 @@ import time
 import urllib.request
 import urllib.error
 
-USER_AGENT = "job-hunter-toolkit scraper (local, personal use)"
+USER_AGENT = "job-hunter-assistant scraper (local, personal use)"
 REQUEST_GAP_SECONDS = 0.5
 
 _last_request = [0.0]

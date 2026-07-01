@@ -1,7 +1,7 @@
 # Career Narrative
 
 > **How to use this:** Copy this file into `private/` and fill it out.
-> This is the foundation document — every other template in the toolkit
+> This is the foundation document — every other template in the assistant
 > draws from it. Write it once, carefully, then revise as your search
 > teaches you what lands. Expect this to take a real sitting, not ten
 > minutes. It's the highest-leverage hour of your search.

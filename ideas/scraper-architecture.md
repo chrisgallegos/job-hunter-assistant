@@ -16,7 +16,7 @@ templates (and any AI collaborator) can read.
 
 - **Local only.** The user runs it on their machine. No hosted service,
   no accounts, no data sent anywhere — same ownership model as the rest
-  of the toolkit.
+  of the assistant.
 - **Optional.** Rung three of the ladder. Nothing in the templates
   depends on it; it just feeds the JD analysis pipeline at volume.
 - **Boring tech.** One script, standard library where possible, output

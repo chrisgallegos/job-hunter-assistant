@@ -1,6 +1,6 @@
 # Guidance for AI coding assistants
 
-You're working in the **Job Hunter Toolkit** — a portable, self-owned job search
+You're working in the **Job Hunter Assistant** — a portable, self-owned job search
 system built on plain Markdown files and a small Python scraper. Read this before
 making changes. Full contributor guidance is in `CONTRIBUTING.md`; the design
 rationale is in `docs/philosophy.md`.

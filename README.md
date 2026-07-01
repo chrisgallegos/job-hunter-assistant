@@ -1,4 +1,4 @@
-# Job Hunter Toolkit
+# Job Hunter Assistant
 
 A portable, self-owned job search system built on plain Markdown files.
 
@@ -35,7 +35,7 @@ python3 serve.py
 
 ## If you have an AI: the self-training loop
 
-The toolkit learns from itself through a three-file contract:
+The assistant learns from itself through a three-file contract:
 
 **1. Review queue** (scraper writes this on every scan)
 ```
@@ -84,7 +84,7 @@ judge each posting for fit beyond keywords, and write verdicts to
 private/jobs/verdicts.json."
 ```
 
-The assistant reads your narrative, evaluates each posting, and writes the file directly — no separate chat window, no API key, no manual JSON. The toolkit is designed around this: files are the interface, and any tool that can read and write files works.
+The assistant reads your narrative, evaluates each posting, and writes the file directly — no separate chat window, no API key, no manual JSON. The assistant is designed around this: files are the interface, and any tool that can read and write files works.
 
 **Why files, not APIs?**
 - Portable: fork the repo, run on your machine, zero cloud dependency
@@ -222,7 +222,7 @@ Most boards are slug-based (`epicgames`, `spotify`) and just work. Two need a on
 - Most LinkedIn postings are republished from Greenhouse/Lever/Ashby anyway — we catch them there first
 - Alternative: save LinkedIn job searches as email alerts, paste interesting ones into JD Analysis
 
-**No telemetry, no accounts, no tracking.** The entire toolkit is yours.
+**No telemetry, no accounts, no tracking.** The entire assistant is yours.
 
 ---
 
@@ -305,7 +305,7 @@ Most AI job-search tools flip this: the AI thinks, you confirm. Here, the struct
 3. **Tweak the watchlist** — company list, title filters, and boost keywords are all user-configurable
 4. **Share learnings patterns** — if you find a pattern (e.g., "game design roles are 60% false positives for product designers"), document it for others
 
-The toolkit is not a platform; it's a starting point. Fork it, break it, rebuild it to fit your search.
+The assistant is not a platform; it's a starting point. Fork it, break it, rebuild it to fit your search.
 
 **Contributing with an AI?** Open the fork in Claude Code (or Cursor/Copilot) and it picks up `CLAUDE.md` automatically — the constraints, the source-adapter contract, and how to test are all there, so your assistant is oriented from the first message. `CONTRIBUTING.md` covers what belongs in the core vs. your own fork.
 

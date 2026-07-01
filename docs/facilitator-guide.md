@@ -9,7 +9,7 @@ narrative for the first time. It works two ways:
   questions are in order for a reason — trust the sequence.
 
 **Before starting:** see `docs/setup-and-modes.md` for how to run the
-toolkit depending on your setup. Claude Code (local CLI) is the
+assistant depending on your setup. Claude Code (local CLI) is the
 recommended mode — the AI writes to your files directly as the session
 progresses, so nothing needs to be copied back manually.
 

@@ -86,7 +86,7 @@ one. The ATS industry as currently constituted becomes partially
 obsolete: data arrives pre-structured and honest rather than scraped
 from a PDF and mangled.
 
-That's a standards problem as much as a product problem. The toolkit
+That's a standards problem as much as a product problem. The assistant
 is the reference implementation — the thing that proves the format
 works before anyone tries to standardize it.
 
@@ -94,12 +94,12 @@ works before anyone tries to standardize it.
 
 ## Build sequence
 
-This is a layer beyond the current toolkit. Dependencies in order:
+This is a layer beyond the current assistant. Dependencies in order:
 
 1. Thin local server — MD files as real nodes (next to build)
 2. Structured export — career narrative as JSON/structured object
 3. Encoding layer — human side + machine side from same source
 4. The coin format spec — open, documented, forkable
 
-The toolkit we have now generates the human-readable narrative.
+The assistant we have now generates the human-readable narrative.
 The coin is what this becomes when it grows up.

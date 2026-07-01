@@ -1,6 +1,6 @@
 # Methodology
 
-The working method this toolkit encodes — developed across a real job
+The working method this assistant encodes — developed across a real job
 search, not theorized. Adopt what fits; the templates assume these
 habits but don't require them.
 

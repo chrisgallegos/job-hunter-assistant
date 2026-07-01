@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Job Hunter Toolkit — thin local server.
+"""Job Hunter Assistant — thin local server.
 
 Serves the interactive app (index.html) and gives it hands: the scraper
 runs on demand and the watchlist is editable from the browser. The MD
@@ -307,7 +307,7 @@ def main():
 
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     url = f"http://localhost:{args.port}"
-    print(f"Job Hunter Toolkit running at {url}  (Ctrl+C to stop)")
+    print(f"Job Hunter Assistant running at {url}  (Ctrl+C to stop)")
     if not args.no_browser:
         webbrowser.open(url)
     try:

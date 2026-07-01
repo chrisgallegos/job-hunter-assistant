@@ -4,7 +4,7 @@
 
 Generative AI was built on the unlicensed creative output of the greater
 human experience. If we're all party to using it, the honest response is
-to send production back out free of charge and open source. This toolkit
+to send production back out free of charge and open source. This assistant
 exists in that spirit: not anyone's exclusive intellectual property —
 made of the greater experience, returned to it.
 

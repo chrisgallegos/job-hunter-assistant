@@ -1,6 +1,6 @@
 # Contributing
 
-This toolkit is designed to be forked and customized. Here are ways to improve it:
+This assistant is designed to be forked and customized. Here are ways to improve it:
 
 ## For your own search (fork and own)
 
@@ -13,7 +13,7 @@ The most valuable contribution is using this in anger — finding what breaks, w
 
 ## For everyone (pull requests)
 
-The core toolkit is intentionally minimal. Before opening a PR, ask: "Does this belong in the default system, or does it belong in the user's fork?"
+The core assistant is intentionally minimal. Before opening a PR, ask: "Does this belong in the default system, or does it belong in the user's fork?"
 
 ### Small wins we'd merge:
 - **Bug fixes** — if the scraper crashes on a certain board, that's ours
