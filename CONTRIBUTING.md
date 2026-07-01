@@ -61,11 +61,16 @@ Keep it boring. Boring is maintainable.
 These are in `ideas/` because they're designed but not built:
 
 - **Career Coin** — dual-output resume: human portrait + machine-parseable object
-- **Workday adapter** — the hard ATS (would need headless browser)
 - **Scheduled daily scans** — launchd/systemd integration
 - **Pattern extraction from learnings** — auto-suggest watchlist edits from dismissed.json
 
 None of these are blocked on external dependencies. None require new architecture. They're just work.
+
+**Already built (once thought hard, turned out not to be):** Workday and
+Eightfold adapters. Workday was assumed to need a headless browser — it doesn't;
+both are plain public JSON APIs, same as Greenhouse/Lever. The findings that made
+them tractable (API shapes, the no-guessable-slug problem, per-platform quirks)
+live in `ideas/ats-platform-notes.md` — read it before adding another ATS.
 
 ## Questions?
 
