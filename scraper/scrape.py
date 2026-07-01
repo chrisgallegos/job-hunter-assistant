@@ -2,10 +2,11 @@
 """Job Hunter Toolkit — scraping layer (rung three of the ladder).
 
 Pulls fresh postings straight from public ATS APIs (Greenhouse, Lever,
-Ashby) for the companies in your watchlist, filters them against your
-title/location criteria, scores relevance, and writes Markdown into
-private/jobs/ — a digest of what's new, plus one file per posting ready
-to drop into the JD analysis workflow.
+Ashby, BambooHR, Workable, Workday, Eightfold, plus the bespoke
+Publicis adapter) for the companies in your watchlist, filters them
+against your title/location criteria, scores relevance, and writes
+Markdown into private/jobs/ — a digest of what's new, plus one file
+per posting ready to drop into the JD analysis workflow.
 
 Local only. Standard library only. No accounts, no tokens, no telemetry.
 
@@ -359,6 +360,8 @@ SOURCE_COST = {
     "bamboohr": 0,  # canonical company ATS — was missing; lost ties to remoteok
     "workable": 0,  # canonical company ATS (public widget API)
     "publicis": 0,  # canonical multi-brand board (Jibe/iCIMS), Creative facet
+    "workday": 0,   # canonical company ATS (CXS API) — must beat aggregators
+    "eightfold": 0,  # canonical company ATS (PCSX API) — must beat aggregators
     "remotive": 1,
     "weworkremotely": 1,
     "remoteok": 2,  # pay-to-play; deprioritize
@@ -765,7 +768,7 @@ def main():
     parser.add_argument(
         "--source",
         choices=["greenhouse", "lever", "ashby", "bamboohr",
-                 "workable", "publicis"],
+                 "workable", "publicis", "workday", "eightfold"],
         help="pin the ATS for --company")
     args = parser.parse_args()
 
