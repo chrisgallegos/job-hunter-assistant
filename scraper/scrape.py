@@ -131,6 +131,15 @@ def parse_watchlist(path):
                 continue
         return boosts
 
+    def salary_floor():
+        """Single '- 150000'-style line -> int, or None if absent/malformed.
+        Only the first entry is used; extra lines are ignored."""
+        for entry in sections.get("salary floor", []):
+            digits = entry.replace(",", "").strip()
+            if digits.isdigit():
+                return int(digits)
+        return None
+
     return {
         "companies": slug_entries("companies"),
         "feeds": slug_entries("feeds"),
@@ -142,6 +151,11 @@ def parse_watchlist(path):
         "locations": lowered("locations"),
         "company_tiers": company_tiers,
         "tier_boosts": tier_boosts("company tier boosts"),
+        # Reuses the tier_boosts parser: same "- keyword: N" shape, just
+        # subtracted instead of added in score(). N is written as a
+        # positive number in the watchlist ("substation: 6" means -6).
+        "score_penalties": tier_boosts("score penalties"),
+        "salary_floor": salary_floor(),
     }
 
 
@@ -157,6 +171,68 @@ def kw_match(kw, text):
             rf"(?<![a-z0-9]){re.escape(kw)}(?![a-z0-9])", text
         ) is not None
     return kw in text
+
+
+# ─── Compensation extraction ────────────────────────────────
+# Cheap regex, not an NLP model — handles the common styles postings
+# actually use: "$120,000 - $150,000", "$120k–$150k", "USD 120,000",
+# "$70/hr". Anything weirder (equity-only, "competitive", banded tables)
+# just yields no match — fail-open, never a filter.
+_SALARY_RE = re.compile(
+    r"""
+    (?P<cur>USD\s?|\$)
+    (?P<min>\d[\d,]*(?:\.\d+)?)\s*(?P<min_mult>[kK]|[mM](?:illion)?)?
+    (?:
+        \s*(?:-|–|—|to|and)\s*
+        (?:USD\s?|\$)?
+        (?P<max>\d[\d,]*(?:\.\d+)?)\s*(?P<max_mult>[kK]|[mM](?:illion)?)?
+    )?
+    \s*
+    (?P<period>/\s*(?:hr|hour)|/\s*(?:yr|year)|per\s+hour|per\s+year|annually)?
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+def _to_number(raw, mult):
+    value = float(raw.replace(",", ""))
+    mult = (mult or "").lower()
+    if mult.startswith("k"):
+        value *= 1_000
+    elif mult.startswith("m"):
+        value *= 1_000_000
+    return value
+
+
+def extract_salary(description):
+    """Pull a compensation range out of free-text posting copy.
+    Returns {"min": float, "max": float, "raw": str, "hourly": bool} or None.
+
+    Only the FIRST match counts — postings sometimes mention unrelated
+    dollar figures (funding raised, revenue) further down, and the comp
+    line is almost always near the top of the requirements/benefits
+    section. min == max when only one figure is given (e.g. "$70/hr").
+    A bare figure under $1,000 with no k/M/period qualifier is almost
+    never a real (non-hourly) comp mention — skip it rather than
+    misreport "$5 gift card" as a salary."""
+    if not description:
+        return None
+    match = _SALARY_RE.search(description[:4000])
+    if not match or not match.group("min"):
+        return None
+    lo = _to_number(match.group("min"), match.group("min_mult"))
+    hi = (_to_number(match.group("max"), match.group("max_mult"))
+          if match.group("max") else lo)
+    period = (match.group("period") or "").lower()
+    hourly = "hr" in period or "hour" in period
+    if not hourly and max(lo, hi) < 1000 and not match.group("min_mult"):
+        return None
+    return {
+        "min": min(lo, hi),
+        "max": max(lo, hi),
+        "raw": match.group(0).strip(),
+        "hourly": hourly,
+    }
 
 
 # ─── Geography: keep US / unknown, drop international-"remote" ────────
@@ -234,6 +310,57 @@ def is_international(location):
     return any(marker in location for marker in _FOREIGN_MARKERS)
 
 
+# ─── Language guard: drop postings that are clearly not in English ────
+# Cheap stdlib heuristic — count hits of a small set of common function
+# words (articles, prepositions, conjunctions) for English vs. a handful
+# of other languages that show up on aggregator feeds (Portuguese,
+# Spanish, French, German). Function words are chosen because they're
+# short, extremely frequent, and language-specific — a Portuguese-language
+# posting will hit "de", "para", "não" repeatedly; an English one won't.
+# Word-boundary matching avoids "de" hitting "design" etc.
+_EN_WORDS = (
+    "the", "and", "you", "with", "our", "for", "your", "will", "are",
+    "have", "this", "that", "team", "role", "work",
+)
+_FOREIGN_WORDS = (
+    # Portuguese
+    "não", "para", "você", "com", "uma", "são", "está", "trabalho",
+    "experiência", "empresa", "conhecimento", "que", "como", "nos",
+    "seu", "sua", "ou", "mais", "sobre", "equipe",
+    # Spanish
+    "usted", "una", "experiencia", "trabajo", "nuestro", "que", "como",
+    "los", "las", "más", "sobre",
+    # French
+    "vous", "avec", "notre", "être", "travail", "expérience", "équipe",
+    "des", "les", "pour", "dans",
+    # German
+    "und", "sie", "mit", "unser", "erfahrung", "unternehmen", "der",
+    "die", "das", "für", "ist",
+)
+
+
+def _word_hits(words, text):
+    return sum(1 for w in words if re.search(rf"\b{re.escape(w)}\b", text))
+
+
+def is_non_english(description):
+    """True only when the description is CLEARLY not English — foreign
+    function-word hits meaningfully outnumber English ones. Deliberately
+    conservative (fail-open): ties, short/empty text, or ambiguous
+    mixes stay in for human judgment. Only checked on the first ~1500
+    chars — enough for a language signal without scanning the whole post,
+    and cheap even on the biggest descriptions."""
+    if not description:
+        return False
+    sample = description[:1500].lower()
+    en = _word_hits(_EN_WORDS, sample)
+    foreign = _word_hits(_FOREIGN_WORDS, sample)
+    # Require a real margin, not just foreign > english by one stray hit —
+    # accented words (não, está, être) are strong signals on their own,
+    # so a small handful reliably means "not English."
+    return foreign >= 4 and foreign > en * 2
+
+
 def passes_filters(posting, criteria):
     title = posting["title"].lower()
     # Strong titles always satisfy the title gate; the generic includes
@@ -254,6 +381,17 @@ def passes_filters(posting, criteria):
     # International-"remote" guard: drop a role based abroad even when it's
     # tagged remote — unless the user explicitly targets that location.
     if not wanted and is_international(location):
+        return False
+    # Non-English guard: drop only when BOTH the description reads as
+    # clearly foreign AND the location gives no US signal — a posting
+    # that's non-English but explicitly US-based (e.g. a bilingual-market
+    # US employer) survives for human judgment, matching the fail-open
+    # bias used everywhere else in this function.
+    has_us_signal = (
+        any(sig in location for sig in _US_SIGNALS)
+        or bool(_US_ABBR_RE.search(location))
+    )
+    if not has_us_signal and is_non_english(posting.get("description") or ""):
         return False
     if targets:
         # "Multiple Locations" style values are unknowns, not mismatches —
@@ -293,6 +431,23 @@ def score(posting, criteria):
                    if kw in tier]
         if matches:
             points += max(matches)
+    # Score penalties: the inverse of boost keywords — downweight (not
+    # exclude) wrong-discipline vocabulary or junior-signal titles that
+    # would otherwise ride a real keyword hit to the top of the digest.
+    # Summed (not capped at the largest, unlike tier_boosts) because
+    # penalties are meant to compound: a junior substation-adjacent
+    # posting should sink harder than either flaw alone. SOURCE_COST is
+    # defined below in this module but resolved at call time, so the
+    # forward reference is safe.
+    points -= sum(
+        pts for kw, pts in criteria.get("score_penalties", [])
+        if kw_match(kw, haystack)
+    )
+    # Source-cost penalty: aggregator noise (remoteok, etc.) sinks in
+    # ranking even when nothing else about the posting is wrong — a
+    # canonical board post and an identical remoteok repost shouldn't
+    # rank the same. Canonical boards (cost 0) are unaffected.
+    points -= SOURCE_COST.get(posting["source"], 0)
     return points
 
 
@@ -362,6 +517,7 @@ SOURCE_COST = {
     "publicis": 0,  # canonical multi-brand board (Jibe/iCIMS), Creative facet
     "workday": 0,   # canonical company ATS (CXS API) — must beat aggregators
     "eightfold": 0,  # canonical company ATS (PCSX API) — must beat aggregators
+    "smartrecruiters": 0,  # canonical company ATS — must beat aggregators
     "remotive": 1,
     "weworkremotely": 1,
     "remoteok": 2,  # pay-to-play; deprioritize
@@ -420,12 +576,19 @@ def slugify(text, max_len=60):
     return slug[:max_len].rstrip("-")
 
 
-def write_posting_file(posting, today):
+def write_posting_file(posting, today, salary_floor=None):
     POSTINGS_DIR.mkdir(parents=True, exist_ok=True)
     name = f"{today}-{slugify(posting['company'])}-{slugify(posting['title'])}.md"
     path = POSTINGS_DIR / name
     posted = parse_posted(posting)
     posted_str = posted.date().isoformat() if posted else "unknown"
+    comp = extract_salary(posting.get("description") or "")
+    comp_line = ""
+    if comp:
+        below = (not comp["hourly"] and salary_floor is not None
+                  and comp["max"] < salary_floor)
+        flag = "  ⚠️ below your salary floor" if below else ""
+        comp_line = f"- **Comp:** {comp['raw']}{flag}\n"
     path.write_text(f"""# {posting['title']} — {posting['company']}
 
 - **Company:** {posting['company']}
@@ -433,7 +596,7 @@ def write_posting_file(posting, today):
 - **Location:** {posting['location'] or 'not listed'}{' (remote)' if posting['remote'] else ''}
 - **Department:** {posting.get('department') or 'not listed'}
 - **Posted:** {posted_str}
-- **Source:** {posting['source']}
+{comp_line}- **Source:** {posting['source']}
 - **URL:** {posting['url']}
 
 > Scraped {today}. To analyze: copy templates/jd-analysis.md to
@@ -447,15 +610,29 @@ def write_posting_file(posting, today):
     return path
 
 
-def write_latest_json(results, today, days, criteria):
+def write_latest_json(results, today, days, criteria, verdicts=None):
     """Machine-readable sidecar of the latest digest, for the local app
     (serve.py). The Markdown digest remains the canonical artifact —
-    this is a view over the same data, regenerated on every scan."""
+    this is a view over the same data, regenerated on every scan.
+
+    verdicts (optional): {url: {"delta": -3..3, "why": ...}} from
+    verdicts.json. When given, each posting carries BOTH its raw
+    keyword score and the verdict delta separately (never merged into
+    one number here) — combined ranking happens in scan(), display
+    combination happens in app.js. serve.py's with_verdicts() also
+    folds verdicts in for API responses that bypass scan()."""
     JOBS_DIR.mkdir(parents=True, exist_ok=True)
+    verdicts = verdicts or {}
+    salary_floor = criteria.get("salary_floor")
     postings = []
     for posting, points, file_path in results:
         posted = parse_posted(posting)
-        postings.append({
+        comp = extract_salary(posting.get("description") or "")
+        below_floor = bool(
+            comp and not comp["hourly"] and salary_floor is not None
+            and comp["max"] < salary_floor
+        )
+        entry = {
             "company": posting["company"],
             "title": posting["title"],
             "department": posting.get("department") or "",
@@ -470,7 +647,19 @@ def write_latest_json(results, today, days, criteria):
             "chips": compute_chips(posting, criteria),
             "file": str(file_path.relative_to(ROOT)),
             "description": html_to_text(posting["description"]),
-        })
+            "comp": comp,
+            "below_salary_floor": below_floor,
+        }
+        verdict = verdicts.get(posting["url"])
+        if isinstance(verdict, dict) and "delta" in verdict:
+            try:
+                entry["verdict"] = {
+                    "delta": max(-3, min(3, int(verdict["delta"]))),
+                    "why": str(verdict.get("why", ""))[:200],
+                }
+            except (TypeError, ValueError):
+                pass
+        postings.append(entry)
     payload = {"generated": today, "days": days, "postings": postings}
     (JOBS_DIR / "latest.json").write_text(json.dumps(payload, indent=1))
 
@@ -529,30 +718,67 @@ def write_review_queue(results, today):
     REVIEW_QUEUE.write_text("\n".join(lines))
 
 
-def write_digest(postings, today, days):
+def write_digest(postings, today, days, salary_floor=None, verdicts=None,
+                  dead_companies=None):
+    """postings is already sorted by the caller (scan()) — verdict-aware
+    when verdicts.json exists, keyword-score-only otherwise. The score
+    shown in the heading stays the raw keyword score; the delta (when a
+    verdict exists) is called out separately so neither number is hidden
+    behind the other, matching how app.js keeps them distinct.
+
+    dead_companies (optional): watchlist company slugs that returned no
+    board on any source this run. Surfaced as a terse "Watchlist health"
+    section so a dead entry (wrong slug, gated tenant, board migration)
+    can't rot silently — see scan()."""
     JOBS_DIR.mkdir(parents=True, exist_ok=True)
+    verdicts = verdicts or {}
     path = JOBS_DIR / f"digest-{today}.md"
     lines = [
         f"# Fresh postings — {today}",
         "",
         f"{len(postings)} new posting(s) in the last {days} day(s), "
-        "sorted by relevance score.",
+        "sorted by relevance score (+ AI verdict delta, when available).",
         "",
     ]
     for posting, points, file_path in postings:
         posted = parse_posted(posting)
         posted_str = posted.date().isoformat() if posted else "undated"
         department = posting.get("department")
+        verdict = verdicts.get(posting["url"])
+        delta_str = ""
+        if isinstance(verdict, dict) and "delta" in verdict:
+            try:
+                delta = max(-3, min(3, int(verdict["delta"])))
+                if delta:
+                    delta_str = f" ({'+' if delta > 0 else ''}{delta} AI)"
+            except (TypeError, ValueError):
+                pass
+        comp = extract_salary(posting.get("description") or "")
+        comp_line = ""
+        if comp:
+            below = (not comp["hourly"] and salary_floor is not None
+                      and comp["max"] < salary_floor)
+            flag = "  ⚠️ BELOW FLOOR" if below else ""
+            comp_line = f"- **Comp:** {comp['raw']}{flag}\n"
         lines += [
-            f"## [{points}] {posting['title']} — {posting['company']}"
+            f"## [{points}{delta_str}] {posting['title']} — {posting['company']}"
             + (f" ({department})" if department else ""),
             f"- **Location:** {posting['location'] or 'not listed'}"
             f"{' (remote)' if posting['remote'] else ''}",
             f"- **Posted:** {posted_str} via {posting['source']}",
-            f"- **Apply:** {posting['url']}",
+            f"{comp_line}- **Apply:** {posting['url']}",
             f"- **Saved:** {file_path.relative_to(ROOT)}",
             "",
         ]
+    if dead_companies:
+        lines += [
+            "## Watchlist health",
+            "",
+            f"{len(dead_companies)} company/companies returned no board on "
+            "any source this run — check for a wrong slug, a gated/moved "
+            "ATS tenant, or a genuinely empty board:",
+            "",
+        ] + [f"- {slug}" for slug in dead_companies] + [""]
     path.write_text("\n".join(lines))
     return path
 
@@ -656,6 +882,15 @@ def scan(days=7, rescan=False, company=None, source=None, log=None):
             seen.setdefault(url, today)
             fresh.append((posting, score(posting, criteria)))
 
+    # Watchlist health: companies that returned zero postings this run —
+    # either the adapter/slug is dead (wrong slug, gated tenant, board
+    # moved) or the company genuinely has no open roles right now. Either
+    # way it's worth a human glance; without this, a dead entry (wrong
+    # slug, platform migration, gated API) silently stops contributing
+    # and nobody notices until they happen to check by hand. See
+    # write_digest()'s "## Watchlist health" section below.
+    dead_companies = []
+
     for slug, pinned in criteria["companies"]:
         modules = (
             {pinned: sources[pinned]} if pinned in sources else sources
@@ -668,6 +903,7 @@ def scan(days=7, rescan=False, company=None, source=None, log=None):
                 break
         else:
             log(f"{slug}: no board found on any source")
+            dead_companies.append(slug)
             continue
         consider(postings, tier=criteria["company_tiers"].get(slug, ""))
 
@@ -724,19 +960,50 @@ def scan(days=7, rescan=False, company=None, source=None, log=None):
         also.sort(key=lambda d: (SOURCE_COST.get(d["source"], 99), d["url"]))
         winner["also_on"] = also
 
+    # Verdict-aware ranking: fold in the AI's judgment call (verdicts.json,
+    # written from review-queue.md — see write_review_queue) alongside the
+    # raw keyword score. The delta is clamped -3..3 (same clamp serve.py's
+    # with_verdicts() uses) so one runaway value in the file can't flip the
+    # whole digest. Sort key only — the raw score (`points`) is what's
+    # actually stored/displayed everywhere; the delta rides along
+    # separately so neither number overwrites the other.
+    verdicts = (
+        json.loads(VERDICTS_FILE.read_text())
+        if VERDICTS_FILE.exists() else {}
+    )
+
+    def combined_score(posting, points):
+        verdict = verdicts.get(posting["url"])
+        delta = 0
+        if isinstance(verdict, dict) and "delta" in verdict:
+            try:
+                delta = max(-3, min(3, int(verdict["delta"])))
+            except (TypeError, ValueError):
+                delta = 0
+        return points + delta
+
     fresh = list(deduped.values())
-    fresh.sort(key=lambda pair: (-pair[1], pair[0]["title"]))
+    fresh.sort(key=lambda pair: (-combined_score(pair[0], pair[1]), pair[0]["title"]))
     results = []
+    salary_floor = criteria.get("salary_floor")
     for posting, points in fresh:
-        file_path = write_posting_file(posting, today)
+        file_path = write_posting_file(posting, today, salary_floor)
         results.append((posting, points, file_path))
 
-    if results:
-        digest = write_digest(results, today, days)
+    if dead_companies:
+        log(f"Watchlist health: {len(dead_companies)} companies returned "
+            f"no board this run: {', '.join(dead_companies)}")
+    if results or dead_companies:
+        # Write the digest even on a zero-match run when there's a health
+        # warning to surface — a fully-dead watchlist run is exactly the
+        # case where staying silent would be worst.
+        digest = write_digest(results, today, days, salary_floor, verdicts,
+                               dead_companies)
         write_review_queue(results, today)
         log(f"Digest: {digest.relative_to(ROOT)}")
-        log(f"AI review queue: {REVIEW_QUEUE.relative_to(ROOT)}")
-    write_latest_json(results, today, days, criteria)
+        if results:
+            log(f"AI review queue: {REVIEW_QUEUE.relative_to(ROOT)}")
+    write_latest_json(results, today, days, criteria, verdicts)
     save_seen(seen)
     return results
 
@@ -768,7 +1035,8 @@ def main():
     parser.add_argument(
         "--source",
         choices=["greenhouse", "lever", "ashby", "bamboohr",
-                 "workable", "publicis", "workday", "eightfold"],
+                 "workable", "publicis", "workday", "eightfold",
+                 "smartrecruiters"],
         help="pin the ATS for --company")
     args = parser.parse_args()
 

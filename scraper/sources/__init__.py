@@ -72,15 +72,16 @@ def post_json(url, payload):
 def get_sources():
     from . import (
         greenhouse, lever, ashby, bamboohr, workable, publicis,
-        workday, eightfold,
+        workday, eightfold, smartrecruiters,
     )
     return {
-        "greenhouse": greenhouse,
-        "lever":      lever,
-        "ashby":      ashby,
-        "bamboohr":   bamboohr,
-        "workable":   workable,
-        "publicis":   publicis,
-        "workday":    workday,
-        "eightfold":  eightfold,
+        "greenhouse":     greenhouse,
+        "lever":          lever,
+        "ashby":          ashby,
+        "bamboohr":       bamboohr,
+        "workable":       workable,
+        "publicis":       publicis,
+        "workday":        workday,
+        "eightfold":      eightfold,
+        "smartrecruiters": smartrecruiters,
     }

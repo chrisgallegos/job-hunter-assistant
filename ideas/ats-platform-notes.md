@@ -116,6 +116,18 @@ Worked examples (see `TENANTS` in `sources/workday.py`):
 - **Possible Cloudflare cooldown.** Bursts of rapid requests
   occasionally tripped a blanket `400` across all requests for a short
   window, self-recovering. Use real pacing/backoff if automating hard.
+- **A `422` on `/jobs` is NOT proof of a real public careers board.**
+  Workday hosts thousands of tenants including internal-only/HR
+  instances that have nothing to do with a public careers site. Probing
+  plausible tenant names against generic site guesses (`External`,
+  `EXTERNAL_CAREERS`, ...) reliably turns up `422` ("tenant exists,
+  site name wrong") for large companies even when their *real* public
+  careers flow runs on a totally different platform (confirmed on
+  `disney` — see Platform sightings below). A `422` only means "keep
+  looking," not "this is close." The only reliable signal is still the
+  real careers page itself: if it has no `myworkdayjobs.com` anywhere
+  in its HTML or JS bundles, it's not Workday, no matter what generic
+  tenant probing turns up.
 
 Retail-heavy Workday tenants (e.g. T-Mobile) need no special store
 filtering: because the search is vocabulary-based, store/sales job
@@ -179,6 +191,61 @@ GET https://{tenant}.eightfold.ai/api/apply/v2/jobs/{id}?domain={tenant}.com
 
 ---
 
+## SmartRecruiters
+
+Public JSON postings API, no auth. **Company id is NOT reliably the
+lowercased company name** — some tenants disambiguate with a trailing
+digit or different casing (Ubisoft's id is `ubisoft2`; bare `ubisoft`
+returns `totalFound: 0`, not an error, so it silently looks like "no
+postings" rather than "wrong id"). Confirm the id with one curl before
+adding it, same discipline as Eightfold's tenant slug.
+
+```
+GET https://api.smartrecruiters.com/v1/companies/{companyId}/postings?limit=100&offset=0
+```
+
+Returns `{offset, limit, totalFound, content:[{id, name, location:
+{city, country, remote, hybrid, fullLocation}, function:{label},
+department:{label}, releasedDate, ...}]}`. `totalFound` is a
+**trustworthy total** (like Eightfold, unlike Workday) — paginate on
+`offset` and stop when `offset >= totalFound` or a page comes back
+empty.
+
+Per-posting detail (needed for the description — the list omits it):
+
+```
+GET https://api.smartrecruiters.com/v1/companies/{companyId}/postings/{postingId}
+```
+
+Returns `jobAd.sections`: `companyDescription`, `jobDescription`,
+`qualifications`, `additionalInformation` — each `{title, text}` with
+real (not entity-escaped) HTML. Also carries `postingUrl` (clean
+human-facing apply link) and `applyUrl` (same link + an `?oga=true`
+tracking param — prefer `postingUrl`).
+
+### Gotchas
+
+- **`limit` is capped at 100** server-side regardless of what's
+  requested — the response echoes back whatever it actually used, so
+  trust the echoed `limit`, not the one you sent.
+- **`department.label` is often just the company/org name**, not a
+  discipline — e.g. Ubisoft's `department` came back `"Ubisoft"` for
+  every posting checked. `function.label` (`"Design"`, `"Marketing"`,
+  `"Information Technology"`) is the actually-useful bucket; the
+  adapter passes that through as `department` for scrape.py's
+  filtering instead of the literal `department` field.
+- **A wrong company id doesn't error** — it returns a normal 200 with
+  `totalFound: 0`, indistinguishable at a glance from "real tenant,
+  just no open roles right now." Always sanity-check a nonzero count
+  before concluding a company isn't on the platform.
+- Same two-tier fetch pattern as Workday/Eightfold: list is cheap and
+  covers every posting, but only postings whose title already looks
+  design-relevant get the per-posting detail call (and therefore a
+  real description) — everything else still has title/location for
+  `passes_filters()`.
+
+---
+
 ## Server-side vs whole-board fetch
 
 Big employers have thousands of postings (Adobe ~1000, T-Mobile 2400+,
@@ -221,10 +288,15 @@ is open — verify per the method above.
 |---|---|---|
 | Adobe, Nordstrom, Boeing, T-Mobile | Workday CXS | open, adapter-ready |
 | Starbucks, Microsoft | Eightfold PCSX | open |
-| Netflix | Eightfold | tenant exists but search API gated (403) |
-| Hulu | Eightfold | `"Group ID not found"` — likely aliased under Disney |
+| Netflix | Eightfold | tenant exists but search API gated (403) — re-confirmed still gated |
+| Hulu / Disney | not Workday | real careers site (`jobs.disneycareers.com`) is TalentBrew/Radancy, no `myworkdayjobs.com` anywhere in the page or its JS bundles. A `disney` tenant DOES exist on Workday's infrastructure (probing returns `422`, i.e. "tenant found, site name wrong") but that's a false-positive signal — see the Workday gotcha below about `422` vs a real public board. No way to find a real site name because the public careers flow doesn't go through Workday at all. Commented out in the watchlist. |
 | EA | Avature | not yet adapted |
 | Snap | Workday "Recruiting" (`workdaysite.com`) | different product than CXS; API shape not yet found |
+| Nintendo (of America) | Greenhouse | slug is `nintendo` (NOT `nintendoofamerica`/`noa`) — found by pulling the real careers page's Next.js JS chunks and grepping for `boards-api.greenhouse.io`. Careers page itself (`careers.nintendo.com`) is a JS SPA with no static ATS signature; the API call only showed up inside a compiled `.js` chunk. |
+| Sony Interactive Entertainment (PlayStation) | Greenhouse | main board slug `sonyinteractiveentertainmentglobal` (208 postings, real UX/Design Director/UI-UX roles). Studio-specific sub-boards also exist on the same platform: `siei`, `teamlfg`, `haven` (Haven Studios). Found via `careers.playstation.com`'s HTML, which embeds literal `job-boards.greenhouse.io/...` apply URLs. |
+| Activision Blizzard | Eightfold | tenant `activision` is real (`activision.eightfold.ai`) but PCSX search is gated (403 "PCSX is not enabled for this user") — same as Netflix. `activisionblizzard`, `blizzard`, `king` don't resolve as separate tenants. |
+| Ubisoft | SmartRecruiters | company id is `ubisoft2`, not `ubisoft` (which returns `totalFound: 0`) — see the SmartRecruiters gotchas above. 199 postings, ~26 design-hint titles. |
+| Wise (fintech, ex-TransferWise) | SmartRecruiters | id `wise`, 368 postings — used as the second verification target for the SmartRecruiters adapter (non-gaming, confirms the adapter generalizes). |
 
 Retail company career sites also index product-category words into
 search results, so a query for "design" can return "Designer Handbags"

@@ -190,6 +190,48 @@ shows up on a canonical company board AND an aggregator (RemoteOK, etc.),
 the canonical posting wins and the aggregator copies ride along on it as
 `also_on` — nothing is lost, the canonical one is just the primary.
 
+Also automatic, no config needed: postings from less-canonical sources
+(RemoteOK, free aggregator feeds) get a small automatic score penalty vs.
+company boards, so aggregator noise sinks in the ranking on its own —
+`## Score penalties` below is for tuning your OWN false positives, not
+source quality.
+
+## Score penalties
+
+The inverse of Boost keywords — a hit SUBTRACTS from the relevance score
+instead of adding to it. Same matching as boost keywords (title +
+company + department + description, case-insensitive substring/word-
+boundary per `kw_match`). Use this to downweight terms that correlate
+with "wrong discipline" or "wrong seniority" for you, WITHOUT hard-
+excluding the posting the way Title excludes would — useful for
+foot-in-door plays you still want to eyeball, just ranked lower.
+
+Format: "- keyword: points" (points is written positive, subtracted
+under the hood). Worked example for a mid-career product designer who
+keeps seeing junior titles and copywriting-adjacent noise:
+
+- junior: 2
+- associate: 2
+- intern: 4
+- copywriter: 3
+
+Penalties sum (unlike Company tier boosts, which only takes the largest
+match) — a posting that trips two penalty keywords sinks by both. If a
+term is disqualifying rather than just noisy, it belongs in Title
+excludes or Department excludes instead — penalties are for "still
+worth a glance, just not at the top."
+
+## Salary floor
+
+Optional, single line, digits only (no `$` or commas). When a posting's
+extracted salary max falls below this, the app flags it — never filters
+it out, since salary extraction is a best-effort regex over free text
+and plenty of real postings just don't state a number. Comp figures with
+an hourly rate skip the floor check entirely (an hourly rate isn't
+comparable to an annual floor without knowing hours/year).
+
+- 120000
+
 ## Locations
 
 A posting is kept if its location contains one of these, OR it's
