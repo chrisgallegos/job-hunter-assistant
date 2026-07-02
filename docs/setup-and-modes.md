@@ -36,7 +36,7 @@ The files are always current.
 4. Open the session with this prompt:
    ```
    Read docs/facilitator-guide.md and private/career-narrative.md,
-   then help me work through the [CHRIS] markers / run a JD analysis /
+   then help me work through the unfinished sections / run a JD analysis /
    update my tracker. Write changes to the files as we go.
    ```
 

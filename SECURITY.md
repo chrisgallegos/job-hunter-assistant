@@ -33,7 +33,7 @@ private/*
 !private/README.md
 ```
 
-This means: "Ignore all of `private/` except for the README." So if you accidentally `git add .`, everything in `private/` is protected. The git hook will refuse to commit it.
+This means: "Ignore all of `private/` except for the README." So if you accidentally `git add .`, everything in `private/` is silently skipped — git never stages it. (Note: `.gitignore` only protects untracked files. If you deliberately `git add -f` something from `private/`, git will take it — don't.)
 
 **Test this yourself:**
 ```bash
@@ -54,7 +54,7 @@ git add .
 - `index.html`, `app.js`, `app.css` — App code
 - `README.md`, `CONTRIBUTING.md` — Documentation
 
-**Example watchlist** (`scraper/watchlist.example.md`) has no real companies initially — you customize it. Nothing in it is personally identifying.
+**Example watchlist** (`scraper/watchlist.example.md`) contains only a few well-known example slugs and generic worked examples — you replace them with your own targets. Nothing in it is personally identifying.
 
 ---
 
@@ -62,7 +62,8 @@ git add .
 
 ### Scraper
 ```
-Public job boards (Greenhouse, Lever, Ashby, Remotive, RemoteOK, WeWorkRemotely)
+Public job boards (Greenhouse, Lever, Ashby, BambooHR, Workable, Workday,
+Eightfold, SmartRecruiters, Publicis + Remotive, RemoteOK, WeWorkRemotely feeds)
     ↓
 scraper/scrape.py (runs on your machine)
     ↓

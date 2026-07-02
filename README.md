@@ -26,7 +26,7 @@ python3 serve.py
 ```
 
 **What happens:**
-- The scraper pulls from Greenhouse, Lever, Ashby, BambooHR, Workable, Workday, Eightfold, and Publicis company boards + RemoteOK, Remotive, WeWorkRemotely feeds
+- The scraper pulls from Greenhouse, Lever, Ashby, BambooHR, Workable, Workday, Eightfold, SmartRecruiters, and Publicis company boards + RemoteOK, Remotive, WeWorkRemotely feeds
 - Postings are filtered by your watchlist, scored by relevance, and saved to `private/jobs/`
 - Each posting gets a card with Analyze (→ JD Analysis form), Track (→ application log), View (→ original), Dismiss (→ learnings)
 - Dismissed reasons accumulate — periodically ask your AI to read them and suggest watchlist refinements
@@ -122,7 +122,7 @@ Works anywhere. No setup. No code.
 ```bash
 python3 serve.py  # Local server, http://localhost:8765
 ```
-- Scraper pulls fresh postings from eight company-board platforms + three feeds every day (or on demand)
+- Scraper pulls fresh postings from nine company-board platforms + three feeds every day (or on demand)
 - App shows a live digest, scored and filtered by your watchlist
 - One-click Analyze/Track/Dismiss
 
@@ -146,9 +146,9 @@ The keyword score alone is useful. Verdicts are an optional layer, not a require
 
 ## How the scraper works
 
-**Sources:** Greenhouse, Lever, Ashby, BambooHR, Workable, Workday, Eightfold, and the multi-brand Publicis board (company job boards); Remotive, RemoteOK, WeWorkRemotely (job feeds). Company boards are treated as canonical — when the same role appears on a board and a pay-to-play feed, the board version wins and the feed copy rides along as "also listed on."
+**Sources:** Greenhouse, Lever, Ashby, BambooHR, Workable, Workday, Eightfold, SmartRecruiters, and the multi-brand Publicis board (company job boards); Remotive, RemoteOK, WeWorkRemotely (job feeds). Company boards are treated as canonical — when the same role appears on a board and a pay-to-play feed, the board version wins and the feed copy rides along as "also listed on."
 
-Most boards are slug-based (`epicgames`, `spotify`) and just work. Two need a one-time manual setup: **Workday** tenants (Adobe, Nordstrom, etc.) need their tenant/pod/site read off the real careers page, and **Eightfold** tenants need a quick curl to confirm the search API is open. Both are documented in `ideas/ats-platform-notes.md`.
+Most boards are slug-based (`epicgames`, `spotify`) and just work. A few need a one-time manual setup: **Workday** tenants (Adobe, Nordstrom, etc.) need their tenant/pod/site read off the real careers page, **Eightfold** tenants need a quick curl to confirm the search API is open, and **SmartRecruiters** company ids sometimes differ from the obvious lowercased company name (e.g. Ubisoft's is `ubisoft2`). All three are documented in `ideas/ats-platform-notes.md`.
 
 **Watchlist** (`private/watchlist.md` — you customize this):
 ```markdown
@@ -180,12 +180,28 @@ Most boards are slug-based (`epicgames`, `spotify`) and just work. Two need a on
 - gaming
 - studio
 - design system
+
+## Score penalties
+- junior: 2
+- associate: 2
+- webflow: 2
+
+## Salary floor
+- 120000
 ```
 
 **Scoring:**
-- Base: title match (strong titles +3, includes +0, excludes drop to 0), seniority level (+2), boost keywords (up to +5), remote (+1)
-- AI layer: verdicts delta overrides or amplifies the base score
+- Base: title match (strong titles +3, generic includes +0, excluded titles are dropped entirely), seniority level (+2), boost keywords (up to +5), remote (+1)
+- Score penalties: watchlist-defined keywords (title/company/department/description) SUBTRACT points — downweight without hard-excluding wrong-discipline or wrong-seniority noise (junior titles, adjacent crafts)
+- Source-cost penalty: automatic, no config — postings from aggregators (RemoteOK, etc.) are penalized vs. canonical company boards, so noise sinks even before dedup
+- Non-English guard: postings that read as clearly non-English AND have no US location signal are dropped (fail-open — ambiguous cases stay in)
+- AI layer: verdicts delta (clamped -3..3) combines with the base score for ranking; both numbers are still shown separately, never merged into one hidden value
 - Dedup: when the same job appears on multiple sources, keeps the canonical company-board version (Greenhouse/Lever/Ashby/Workday/Eightfold/etc.) over RemoteOK's pay-to-play
+
+**Compensation:**
+- A regex over each posting's description extracts a salary range where stated (`$120,000-$150,000`, `$120k-$150k`, `USD 120,000`, `$70/hr`, etc.)
+- Shown on the card, in the digest, and in the per-posting file when found
+- When `## Salary floor` is set and an extracted max falls below it, the posting is flagged (never filtered) — hourly rates skip the floor check
 
 **Output:**
 - `private/jobs/digest-YYYY-MM-DD.md` — human-readable ranked list, Markdown export
@@ -194,7 +210,7 @@ Most boards are slug-based (`epicgames`, `spotify`) and just work. Two need a on
 - `private/jobs/review-queue.md` — token-lean handoff to your AI
 - `private/jobs/verdicts.json` — where your AI writes back
 - `private/jobs/dismissed.json` — what you rejected and why
-- `private/jobs/learnings.md` — pattern accumulation for watchlist refinement
+- `private/jobs/learnings.md` — pattern accumulation for watchlist refinement (auto-appended on every dismissal)
 
 ---
 
@@ -209,10 +225,10 @@ Most boards are slug-based (`epicgames`, `spotify`) and just work. Two need a on
 - Docs (methodology, how to use the system)
 - Scraper code (reads public APIs only)
 - Server code (binds localhost only, serves only what you need)
-- Example watchlist (no real companies yet — you customize it)
+- Example watchlist (a few well-known example slugs — you replace them with your targets)
 
 **Data flow:**
-1. Scraper → pulls from public job boards (Greenhouse, Lever, Ashby, BambooHR, Workable, Workday, Eightfold, Publicis, Remotive, RemoteOK, WeWorkRemotely)
+1. Scraper → pulls from public job boards (Greenhouse, Lever, Ashby, BambooHR, Workable, Workday, Eightfold, SmartRecruiters, Publicis, Remotive, RemoteOK, WeWorkRemotely)
 2. Server → local only, binds 127.0.0.1, never broadcasts
 3. App → reads/writes your private/ folder via the server
 4. Your AI → reads/writes `private/` directly (AI coding assistant) or via copy-paste (chat) — same file contract either way, no API account required
@@ -244,11 +260,12 @@ docs/               Philosophy, methodology, setup guides
   facilitator-guide.md      Step-by-step for no-AI mode
   setup-and-modes.md        First-session prompts for Claude Code, chat, self-guided
 
+serve.py            Local server: python3 serve.py [--port 8765]
+
 scraper/            Job board scraper — pulls from public APIs, local only
   scrape.py                 CLI: python3 scraper/scrape.py [--days 7] [--rescan] ...
-  serve.py                  Local server: python3 serve.py [--port 8765]
-  sources/                  Company-board adapters: greenhouse, lever, ashby, bamboohr, workable, workday, eightfold, publicis
-  feeds/                    Feed adapters: remotive.py, remoteok.py, weworkremotely.py
+  sources/                  Company-board adapters: greenhouse, lever, ashby, bamboohr, workable, workday, eightfold, smartrecruiters, publicis
+  feeds/                    Feed adapters: remotive, remoteok, weworkremotely + optional usajobs (needs free API key), neogov (stub)
   watchlist.example.md      Template for your custom watchlist
 
 index.html, app.js, app.css, tokens.css
@@ -259,7 +276,7 @@ ideas/              Designs for future layers + engineering notes
   career-coin.md            Portable career identity object (human + machine readable)
   interactive-site.md       Direction notes for the browser app
   scraper-architecture.md   Design sketch and deferred decisions
-  ats-platform-notes.md     Live-tested notes on adding ATS platforms (Workday, Eightfold): API shapes, quirks, gotchas
+  ats-platform-notes.md     Live-tested notes on adding ATS platforms (Workday, Eightfold, SmartRecruiters): API shapes, quirks, gotchas
 
 private/            YOUR instance — gitignored, never published
   career-narrative.md       Filled-out version (you write this)

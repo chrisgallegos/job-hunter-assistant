@@ -26,7 +26,7 @@ rationale is in `docs/philosophy.md`.
 
 - `scraper/scrape.py` — the scan pipeline: fetch → filter → score → write MD.
 - `scraper/sources/` — company-board adapters (one file per ATS platform).
-- `scraper/feeds/` — job-feed adapters (Remotive, RemoteOK, WeWorkRemotely).
+- `scraper/feeds/` — job-feed adapters (Remotive, RemoteOK, WeWorkRemotely, plus optional USAJobs/NeoGov).
 - `templates/`, `docs/` — the no-code and methodology layers.
 - `index.html` / `app.js` / `app.css` — the local browser app (`python3 serve.py`).
 - `ideas/` — design notes and engineering findings.
@@ -55,7 +55,7 @@ a slug that isn't on that platform is normal, not an error. Then:
    aggregators. This is a real, easy-to-miss bug.
 3. Add the CLI `--source` choice in `scrape.py`.
 
-**Before adding a Workday or Eightfold-style adapter, read
+**Before adding a Workday, Eightfold, or SmartRecruiters-style adapter, read
 `ideas/ats-platform-notes.md`** — it has the live-tested API shapes and the
 non-obvious gotchas (Workday's unguessable tenant/pod/site, `limit>20` 400s,
 loose full-text search; Eightfold's gated tenants and retail leakage; the
