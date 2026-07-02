@@ -951,6 +951,12 @@ tr:hover td { background: var(--surface); }
   color: var(--text-secondary);
 }
 
+/* Extracted comp that falls below the watchlist's Salary floor — flagged,
+   never hidden. Reuses the --danger token like .job-dismiss. */
+.job-card-salary-below-floor {
+  color: var(--danger);
+}
+
 .job-card-actions {
   display: flex;
   gap: var(--space-2);

@@ -24,9 +24,9 @@ const STEPS = [
     question: "What kind of role are you looking for?",
     hint: "Think beyond titles — what does the right job actually feel like? Broad or specialized? Leading a team or individual contributor? Any industries you're drawn to or avoiding?",
     fields: [
-      { key: 'target_roles',    label: 'Target roles',              type: 'text',     placeholder: 'Senior Designer, Senior Art Director...' },
+      { key: 'target_roles',    label: 'Target roles',              type: 'text',     placeholder: 'Senior Product Designer, Design Lead...' },
       { key: 'seniority',       label: 'Seniority',                 type: 'text',     placeholder: 'Senior IC, open to lead' },
-      { key: 'industries',      label: 'Industries (drawn to / avoiding)', type: 'textarea', placeholder: 'Gaming and entertainment first. Open to agencies...' },
+      { key: 'industries',      label: 'Industries (drawn to / avoiding)', type: 'textarea', placeholder: 'Healthcare and climate first. Open to fintech, avoiding adtech...' },
     ]
   },
   {
@@ -35,9 +35,9 @@ const STEPS = [
     question: "Location, salary, deal-breakers.",
     hint: "Be honest here — this file is private. Vague targets produce vague searches. Name the salary number you need. Deal-breakers are patterns from past experience, not hypotheticals.",
     fields: [
-      { key: 'location',      label: 'Location / remote',  type: 'text',     placeholder: 'Remote or Seattle area' },
-      { key: 'salary',        label: 'Salary floor',       type: 'text',     placeholder: '$150k FTE. $110k for gaming specifically.' },
-      { key: 'dealbreakers',  label: 'Deal-breakers',      type: 'textarea', placeholder: 'Micromanaging leadership. Startups without strong experienced leadership...' },
+      { key: 'location',      label: 'Location / remote',  type: 'text',     placeholder: 'Remote or Chicago area' },
+      { key: 'salary',        label: 'Salary floor',       type: 'text',     placeholder: '$120k FTE. $95k for the dream industry specifically.' },
+      { key: 'dealbreakers',  label: 'Deal-breakers',      type: 'textarea', placeholder: 'On-call weekends. Companies that ship dark patterns...' },
     ]
   },
   {
@@ -46,7 +46,7 @@ const STEPS = [
     question: "Who are you professionally, in two sentences?",
     hint: "Not a job title — the thing underneath the titles. What you're great at, what makes you different. This becomes the spine of every cover letter and the answer to 'tell me about yourself.' Write it, then read it out loud.",
     fields: [
-      { key: 'hero', label: 'Hero statement', type: 'textarea', placeholder: 'Senior product designer, nearly 20 years, generalist by conviction...' },
+      { key: 'hero', label: 'Hero statement', type: 'textarea', placeholder: 'Product designer, twelve years, happiest untangling messy enterprise workflows...' },
     ]
   },
   {
@@ -55,8 +55,8 @@ const STEPS = [
     question: "What would you bet on in an interview — and what wouldn't you lead with?",
     hint: "Two honest lists. Core strengths: things you'd put front and center. Working knowledge: things you can do but wouldn't claim professional-grade. The split matters more than the length.",
     fields: [
-      { key: 'core_strengths',    label: 'Core strengths',   type: 'textarea', placeholder: 'Visual design leadership, art direction, production discipline...' },
-      { key: 'working_knowledge', label: 'Working knowledge', type: 'textarea', placeholder: 'Motion design, 3D, game engines, illustration...' },
+      { key: 'core_strengths',    label: 'Core strengths',   type: 'textarea', placeholder: 'Interaction design, design systems, workshop facilitation...' },
+      { key: 'working_knowledge', label: 'Working knowledge', type: 'textarea', placeholder: 'Front-end prototyping, motion design, data visualization...' },
     ]
   },
   {
@@ -65,7 +65,7 @@ const STEPS = [
     question: "What are your 3–6 strongest projects?",
     hint: "For each one: what was at stake, what was specifically yours, what decision you made and why, what changed because of it. Numbers if you have them. Write loosely — you can refine later.",
     fields: [
-      { key: 'projects', label: 'Projects (one per paragraph, or bullet per project)', type: 'textarea', placeholder: 'TOYS — Masterbrand, 2024-2026. Designed the GenAI kitchen visualization feature. Account wall conversion 23% → 33%...\n\nAdinovis audit platform — 100+ hour workflow reduced to ~10...' },
+      { key: 'projects', label: 'Projects (one per paragraph, or bullet per project)', type: 'textarea', placeholder: 'Claims portal redesign — Meridian Insurance, 2023-2025. Led the intake flow rework. Abandonment 41% → 18%...\n\nInternal design system — consolidated three product UIs onto one token set...' },
     ]
   },
   {
@@ -74,7 +74,7 @@ const STEPS = [
     question: "Walk me through your career — not the resume, the why.",
     hint: "Each move: what happened, what you chose, what you learned. The moves that need explaining are the ones worth writing down. Layoffs, departures, pivots. Don't apologize — find the honest framing.",
     fields: [
-      { key: 'arc', label: 'Career arc', type: 'textarea', placeholder: 'Started at Art Institute, first pro role at Provis Media...' },
+      { key: 'arc', label: 'Career arc', type: 'textarea', placeholder: 'Started in print at a local shop, jumped to product at a fintech startup...' },
     ]
   },
   {
@@ -83,7 +83,7 @@ const STEPS = [
     question: "Why are you searching right now?",
     hint: "One paragraph you can say out loud without flinching. Frame it as movement toward something, not away from something. Add a note on how to calibrate it per audience type if useful.",
     fields: [
-      { key: 'transition', label: 'Transition story', type: 'textarea', placeholder: 'I was recruited specifically out of [company] by a VP building a team with a clear vision...' },
+      { key: 'transition', label: 'Transition story', type: 'textarea', placeholder: 'My last company sunset the product I led; I want the next team to be one that ships...' },
       { key: 'voice',      label: 'Voice notes (cover letters + outreach)', type: 'textarea', placeholder: 'Short. Biz casual. Calm confidence. No em dashes — colons instead...' },
     ]
   }
@@ -479,12 +479,27 @@ function extractExcerpt(desc) {
   return text.replace(/[#*_`>]/g, '').replace(/\s+/g, ' ').trim();
 }
 
+// Prefers the scraper's server-side extraction (j.comp — a regex over the
+// full description, see scrape.py's extract_salary) when present; falls
+// back to this narrower client-side scan for postings scraped before that
+// field existed (older latest.json snapshots) so old digests don't regress.
 function extractSalary(desc) {
   if (!desc) return null;
   const m = desc.match(/\$[\d,]+(?:[kK])?\s*(?:[-–—]\s*\$[\d,]+(?:[kK])?)?(?:\s*(?:\/yr|\/year|annually|\/hr|\/hour|per year|per hour))?/);
   if (!m || !m[0].includes('$')) return null;
   const raw = m[0].trim();
   return raw.length > 60 ? raw.slice(0, 60) + '…' : raw;
+}
+
+// Comp display string + below-floor flag, preferring the server-extracted
+// j.comp (raw string form, e.g. "$120,000 - $150,000") over the client
+// fallback. Returns { text, belowFloor } or null when nothing to show.
+function compDisplay(j) {
+  if (j.comp && j.comp.raw) {
+    return { text: j.comp.raw, belowFloor: !!j.below_salary_floor };
+  }
+  const fallback = extractSalary(j.description);
+  return fallback ? { text: fallback, belowFloor: false } : null;
 }
 
 function extractEmploymentType(desc) {
@@ -563,9 +578,12 @@ function renderJobs(statusMsg) {
   jobsData.sort((a, b) => combinedScore(b) - combinedScore(a));
   const list = document.getElementById('jobs-list');
   list.innerHTML = jobsData.map((j, i) => {
-    const salary = extractSalary(j.description);
+    const comp = compDisplay(j);
+    const salaryHtml = comp
+      ? `<span class="job-card-salary-inline${comp.belowFloor ? ' job-card-salary-below-floor' : ''}"${comp.belowFloor ? ' title="Below your salary floor (private/watchlist.md)"' : ''}>${escHtml(comp.text)}${comp.belowFloor ? ' ⚠️' : ''}</span>`
+      : null;
     const locParts = [j.location ? escHtml(j.location) : null, j.remote ? '<strong>remote</strong>' : null].filter(Boolean).join(' · ');
-    const locWithSalary = [locParts, salary ? `<span class="job-card-salary-inline">${escHtml(salary)}</span>` : null].filter(Boolean).join(' · ');
+    const locWithSalary = [locParts, salaryHtml].filter(Boolean).join(' · ');
     const excerpt = extractExcerpt(j.description);
     const chips = j.chips || [];
     const tierChipHtml = tierChip(j.tier);
