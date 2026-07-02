@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Hunter Assistant</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,0,0" />
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Header -->
+  <header class="app-header" role="banner">
+    <div>
+      <h1>Job Hunter Assistant</h1>
+      <span class="tagline">Works with any AI. Works with no AI.</span>
+    </div>
+    <nav class="app-nav" aria-label="Primary navigation">
+      <button class="nav-btn active" data-section="home"     onclick="showSection('home')">Home</button>
+      <button class="nav-btn"        data-section="narrative" onclick="showSection('narrative'); showNarrativeSection()">Narrative</button>
+      <button class="nav-btn"        data-section="jobs"      onclick="showSection('jobs'); initJobs()">Jobs</button>
+      <button class="nav-btn"        data-section="jd"        onclick="showSection('jd')">JD Analysis</button>
+      <button class="nav-btn"        data-section="tracker"   onclick="showSection('tracker'); loadTracker()">Tracker</button>
+    </nav>
+  </header>
+
+  <main class="app-main" id="main">
+
+    <!-- ── Home ─────────────────────────────────────────── -->
+    <section id="home" class="section active" aria-label="Home">
+
+      <div class="home-hero">
+        <h2>Your job search.<br>Your data.<br>Your AI.</h2>
+        <p>A structured methodology for running a job search — built on plain Markdown files you own. No account, no credits, no data sent anywhere.</p>
+      </div>
+
+      <div class="home-actions">
+        <button id="start-btn" class="btn btn-primary" onclick="showSection('narrative'); showNarrativeSection()">Start my narrative →</button>
+        <button class="btn btn-ghost" onclick="showSection('jd')">Analyze a job posting</button>
+      </div>
+
+      <div class="home-ladder">
+        <h3>How it works</h3>
+        <div class="ladder-items">
+          <div class="ladder-item">
+            <span class="ladder-num">1</span>
+            <div>
+              <strong>Build your career narrative</strong>
+              <p>A guided interview surfaces your real stories, metrics, and voice. The foundation every application draws from.</p>
+            </div>
+          </div>
+          <div class="ladder-item">
+            <span class="ladder-num">2</span>
+            <div>
+              <strong>Analyze job postings</strong>
+              <p>Paste a posting, get a pre-filled analysis template: what they actually need, where you match, apply/skip/stretch verdict.</p>
+            </div>
+          </div>
+          <div class="ladder-item">
+            <span class="ladder-num">3</span>
+            <div>
+              <strong>Track applications</strong>
+              <p>Log every application. The patterns section tells you where the funnel leaks and what to fix.</p>
+            </div>
+          </div>
+          <div class="ladder-item">
+            <span class="ladder-num">4</span>
+            <div>
+              <strong>Bring your AI (optional)</strong>
+              <p>Drop this folder into Claude, ChatGPT, or Gemini and say "read the docs/ folder." The AI absorbs the instructions and runs the session. Everything exports as Markdown your AI can read and write.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── Career Narrative ──────────────────────────────── -->
+    <section id="narrative" class="section" aria-label="Career narrative wizard">
+
+      <div class="section-header">
+        <h2>Career Narrative</h2>
+        <p>Answer the questions. Export your narrative as a Markdown file when done — save it to <code>private/career-narrative.md</code> in the assistant folder.</p>
+      </div>
+
+      <div id="portrait-view" style="display:none;"></div>
+      <div id="wizard-container"></div>
+
+    </section>
+
+    <!-- ── Jobs (scraper view) ───────────────────────────── -->
+    <section id="jobs" class="section" aria-label="Fresh job postings">
+
+      <div class="jobs-header">
+        <div class="section-header" style="margin-bottom:0;">
+          <h2>Fresh Jobs</h2>
+          <p>Pulled straight from company job boards (Greenhouse, Lever, Ashby), filtered and scored against your watchlist. Everything lands in <code>private/jobs/</code> as Markdown.</p>
+        </div>
+        <div class="jobs-controls">
+          <label class="jobs-days-label" for="scan-days">Last
+            <select id="scan-days">
+              <option value="3">3 days</option>
+              <option value="7" selected>7 days</option>
+              <option value="14">14 days</option>
+              <option value="30">30 days</option>
+              <option value="60">60 days</option>
+            </select>
+          </label>
+          <label class="jobs-rescan-label"><input type="checkbox" id="scan-rescan"> include seen</label>
+          <button id="scan-btn" class="btn btn-primary" onclick="runScan()">Scan now →</button>
+        </div>
+      </div>
+
+      <div id="jobs-status" class="jobs-status" aria-live="polite"></div>
+
+      <div id="jobs-offline" class="jobs-offline" style="display:none;">
+        <strong>The scraper needs the local server.</strong>
+        <p>From the assistant folder, run <code>python3 serve.py</code> and open the address it prints. The server runs only on your machine — nothing leaves it.</p>
+      </div>
+
+      <div id="jobs-list"></div>
+
+      <div class="jobs-watchlist">
+        <button class="btn btn-ghost btn-sm" onclick="toggleWatchlist()" id="watchlist-toggle">Edit watchlist ▸</button>
+        <div id="watchlist-editor" style="display:none;">
+          <p class="text-muted text-sm">This is <code>private/watchlist.md</code> — companies to watch, title filters, boost keywords, locations. Plain Markdown; your AI can edit it too.</p>
+          <textarea id="watchlist-text" rows="16" spellcheck="false"></textarea>
+          <div class="jobs-watchlist-actions">
+            <button class="btn btn-primary btn-sm" onclick="saveWatchlist()">Save watchlist</button>
+            <span id="watchlist-status" class="text-muted text-sm"></span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── JD Analysis ───────────────────────────────────── -->
+    <section id="jd" class="section" aria-label="Job description analysis">
+
+      <div class="section-header">
+        <h2>JD Analysis</h2>
+        <p>Paste a job posting. Export a pre-filled analysis template — save it to <code>private/jd-[company]-[role].md</code> and work through it with or without your AI.</p>
+      </div>
+
+      <div class="jd-layout">
+
+        <div class="jd-meta">
+          <div class="field">
+            <label for="jd_company">Company</label>
+            <input type="text" id="jd_company" placeholder="Huge">
+          </div>
+          <div class="field">
+            <label for="jd_role">Role title</label>
+            <input type="text" id="jd_role" placeholder="Visual Design Lead">
+          </div>
+          <div class="field" style="grid-column: 1 / -1;">
+            <label for="jd_source">Source URL</label>
+            <input type="text" id="jd_source" placeholder="https://...">
+          </div>
+        </div>
+
+        <div class="jd-paste-area">
+          <div class="field">
+            <label for="jd_posting">Paste the full job description</label>
+            <textarea id="jd_posting" rows="12" placeholder="Paste the entire posting — requirements, responsibilities, about the company. Keep the full text; postings get taken down."></textarea>
+          </div>
+        </div>
+
+        <div>
+          <button class="btn btn-primary" onclick="runJDAnalysis()">Export analysis template →</button>
+          <p class="text-muted text-sm mt-4">Opens a pre-filled <code>.md</code> file with your posting attached. Fill in the match assessment yourself, or hand it to your AI with your career narrative alongside it.</p>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ── Tracker ───────────────────────────────────────── -->
+    <section id="tracker" class="section" aria-label="Application tracker">
+
+      <div class="tracker-actions">
+        <div class="section-header" style="margin-bottom:0;">
+          <h2>Tracker</h2>
+          <p>A live, read-only view of <code>private/tracker.md</code>.</p>
+        </div>
+      </div>
+
+      <div id="tracker-phase-note" class="tracker-phase-note">
+        Editing lands in Phase 2 — edit <code>private/tracker.md</code> directly for now.
+      </div>
+
+      <div id="tracker-status" class="tracker-status"></div>
+
+      <div id="tracker-empty" class="tracker-empty" style="display:none;">
+        Nothing in the tracker yet. Add rows to <code>private/tracker.md</code>.
+      </div>
+
+      <div id="tracker-content">
+
+        <div class="tracker-table-block">
+          <h3 class="tracker-table-title">Active</h3>
+          <div id="tracker-active-body" class="tracker-card-list" aria-label="Active applications"></div>
+        </div>
+
+        <div class="tracker-table-block">
+          <h3 class="tracker-table-title">Closed</h3>
+          <div id="tracker-closed-body" class="tracker-card-list" aria-label="Closed applications"></div>
+        </div>
+
+        <div class="tracker-table-block">
+          <h3 class="tracker-table-title">Patterns</h3>
+          <div id="tracker-patterns" class="tracker-patterns"></div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

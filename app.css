@@ -1,0 +1,1044 @@
+/* Job Hunter Assistant — app styles
+   All values reference CSS custom properties only.
+   Swap tokens.css for any host design system and this adapts. */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background: var(--background);
+}
+
+/* ─── Layout ─────────────────────────────────────────────── */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-4) var(--space-8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.app-header h1 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  letter-spacing: -0.02em;
+}
+
+.app-header .tagline {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.app-nav {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.nav-btn {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.nav-btn:hover { background: var(--surface); color: var(--text-primary); }
+.nav-btn.active { background: var(--surface); color: var(--text-primary); font-weight: var(--font-medium); }
+
+.app-main {
+  flex: 1;
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-8);
+}
+
+/* ─── Sections ───────────────────────────────────────────── */
+
+.section { display: none; }
+.section.active { display: block; }
+
+/* ─── Home ───────────────────────────────────────────────── */
+
+.home-hero {
+  margin-bottom: var(--space-12);
+}
+
+.home-hero h2 {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-4);
+}
+
+.home-hero p {
+  font-size: var(--text-lg);
+  color: var(--text-secondary);
+  max-width: 520px;
+}
+
+.home-actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-12);
+}
+
+.home-ladder {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-8);
+}
+
+.home-ladder h3 {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-6);
+}
+
+.ladder-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ladder-item {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.ladder-num {
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  color: var(--text-muted);
+  min-width: 1.5rem;
+  padding-top: 2px;
+}
+
+.ladder-item strong { display: block; font-weight: var(--font-medium); }
+.ladder-item p { font-size: var(--text-sm); color: var(--text-secondary); margin-top: var(--space-1); }
+
+/* ─── Buttons ────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+  border: none;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  transition: opacity var(--transition), background var(--transition);
+  text-decoration: none;
+}
+
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-primary { background: var(--primary); color: var(--primary-fg); }
+.btn-accent  { background: var(--accent);  color: var(--accent-fg);  }
+.btn-ghost   { background: var(--surface); color: var(--text-primary); }
+.btn-sm      { padding: var(--space-2) var(--space-3); font-size: var(--text-xs); }
+
+/* ─── Portrait ───────────────────────────────────────────── */
+
+.portrait { display: flex; flex-direction: column; gap: var(--space-12); }
+
+.portrait-hero {
+  padding-bottom: var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
+
+.portrait-hero p {
+  font-size: var(--text-xl);
+  line-height: 1.5;
+  color: var(--text-primary);
+  font-weight: var(--font-normal);
+  letter-spacing: -0.01em;
+}
+
+.portrait-block { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.portrait-label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.portrait-body {
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.portrait-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.portrait-meta-row {
+  display: flex;
+  gap: var(--space-4);
+  align-items: baseline;
+  font-size: var(--text-sm);
+}
+
+.portrait-meta-key {
+  min-width: 140px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.portrait-meta-val {
+  color: var(--text-primary);
+  line-height: var(--leading-normal);
+}
+
+.portrait-skills {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.portrait-skills-group { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.portrait-skills-group-label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+}
+
+.portrait-skills-group-val {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-normal);
+}
+
+.portrait-projects {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.portrait-project {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+
+.portrait-project:last-child { border-bottom: none; }
+
+.portrait-transition {
+  font-size: var(--text-lg);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  padding-left: var(--space-6);
+  border-left: 3px solid var(--border);
+  white-space: pre-wrap;
+}
+
+.portrait-actions {
+  display: flex;
+  gap: var(--space-3);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.portrait-danger {
+  margin-left: auto;
+  color: var(--danger);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.portrait-danger:hover { border-color: var(--danger); opacity: 1; }
+
+/* ─── Wizard ─────────────────────────────────────────────── */
+
+.wizard-progress {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+}
+
+.progress-step {
+  height: 3px;
+  flex: 1;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background var(--transition);
+}
+
+.progress-step.done    { background: var(--primary); }
+.progress-step.current { background: var(--accent); }
+
+.wizard-step { display: none; }
+.wizard-step.active { display: block; }
+
+.step-label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.step-question {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-2);
+}
+
+.step-hint {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-6);
+  line-height: var(--leading-normal);
+}
+
+.step-hint em {
+  font-style: normal;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+textarea, input[type="text"] {
+  width: 100%;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  resize: vertical;
+  transition: border-color var(--transition);
+  line-height: var(--leading-normal);
+}
+
+textarea:focus, input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+textarea { min-height: 140px; }
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.field-row.single { grid-template-columns: 1fr; }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.field label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+}
+
+.wizard-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+}
+
+.wizard-actions-right { display: flex; gap: var(--space-3); }
+
+/* ─── JD Analysis ────────────────────────────────────────── */
+
+.jd-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.jd-paste-area textarea { min-height: 200px; font-size: var(--text-sm); font-family: var(--font-mono); }
+
+.jd-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+/* ─── Tracker ────────────────────────────────────────────── */
+
+.tracker-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-6);
+}
+
+.tracker-empty {
+  text-align: center;
+  padding: var(--space-16) var(--space-8);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+th {
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  vertical-align: top;
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface); }
+
+.status-pill {
+  display: inline-flex;
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.tracker-phase-note {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.tracker-phase-note code,
+.tracker-status code { font-family: var(--font-mono); }
+
+.tracker-status {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+}
+.tracker-status:empty { display: none; }
+
+.tracker-table-block { margin-bottom: var(--space-10); }
+
+.tracker-table-title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-medium);
+  margin-bottom: var(--space-3);
+}
+
+/* ─── Tracker cards ──────────────────────────────────────── */
+
+.tracker-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tracker-card-empty {
+  font-size: var(--text-sm);
+  padding: var(--space-4);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  margin: 0;
+}
+
+.tracker-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-6);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+.tracker-card:hover { background: var(--surface); }
+.tracker-card a { color: var(--accent, var(--text-primary)); }
+
+/* Header: company prominent, role beside it; wraps under on narrow widths. */
+.tracker-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+}
+
+.tracker-card-company {
+  font-weight: var(--font-bold);
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.tracker-card-role {
+  color: var(--text-secondary);
+}
+
+/* Meta line: compact labeled facts that wrap freely, stacking on mobile. */
+.tracker-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.tracker-meta-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  min-width: 0;
+}
+
+.tracker-meta-label,
+.tracker-line-label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+/* Next action: its own line. */
+.tracker-card-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.tracker-line-val { color: var(--text-primary); min-width: 0; }
+
+/* Full-width block — the "pseudo-row within the row": Notes / What I learned. */
+.tracker-card-block {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.tracker-block-val {
+  margin-top: var(--space-1);
+  color: var(--text-primary);
+  line-height: var(--leading-normal);
+}
+.tracker-block-val a { color: var(--accent, var(--text-primary)); }
+
+.tracker-patterns {
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: var(--text-primary);
+}
+.tracker-patterns h3,
+.tracker-patterns h4,
+.tracker-patterns h5,
+.tracker-patterns h6 {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  margin: var(--space-4) 0 var(--space-2);
+}
+.tracker-patterns p { margin: 0 0 var(--space-3); }
+.tracker-patterns ul { margin: 0 0 var(--space-3) var(--space-5); }
+.tracker-patterns li { margin-bottom: var(--space-1); }
+.tracker-patterns code { font-family: var(--font-mono); font-size: 0.9em; }
+
+/* ─── Modal ──────────────────────────────────────────────── */
+
+.modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.modal-backdrop.open { display: flex; }
+
+.modal {
+  background: var(--background);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  max-width: 560px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal h3 {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--space-6);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+/* ─── Export preview ─────────────────────────────────────── */
+
+.export-preview {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  color: var(--text-secondary);
+  max-height: 320px;
+  overflow-y: auto;
+  margin-bottom: var(--space-6);
+}
+
+/* ─── Section headings ───────────────────────────────────── */
+
+.section-header {
+  margin-bottom: var(--space-8);
+}
+
+.section-header h2 {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-2);
+}
+
+.section-header p {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+/* ─── Jobs (scraper view) ────────────────────────────────── */
+
+.jobs-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-6);
+}
+
+.jobs-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.jobs-days-label,
+.jobs-rescan-label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.jobs-controls select {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+}
+
+.jobs-status {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  min-height: 1.5em;
+  margin-bottom: var(--space-4);
+}
+
+.jobs-offline {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+.jobs-offline p { margin-top: var(--space-2); }
+
+.job-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "body score"
+    "analyze analyze";
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+  overflow: hidden;
+}
+
+.job-card-body {
+  grid-area: body;
+  padding: var(--space-6);
+  min-width: 0;
+}
+
+.job-card-identity { margin-bottom: var(--space-3); }
+
+.job-card-title-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.job-card-title {
+  font-weight: var(--font-bold);
+  letter-spacing: -0.01em;
+}
+
+/* "Applied" status stamp: a calm "you've handled this" signal near the title.
+   Reuses the chip shape but stays subtle — not a call to action. */
+.job-card-applied-badge {
+  color: var(--text-secondary);
+  background: var(--surface);
+  border-color: var(--border);
+  font-weight: var(--font-medium);
+  align-self: center;
+}
+
+/* Closed-tracker variant: further de-emphasized — it's settled history. */
+.job-card-applied-badge-closed {
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.job-card-company {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-1);
+}
+
+.job-card-co-name {
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+}
+
+.job-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.job-card-chip {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px var(--space-2);
+  white-space: nowrap;
+}
+
+.job-card-location-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+}
+
+.job-card-location {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* "Also listed on": secondary, muted row of aggregator links. Clearly
+   subordinate to the primary canonical View link. */
+.job-card-also-on {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+.job-card-also-on a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+}
+
+.job-card-also-on a:hover {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-muted);
+}
+
+/* Watchlist-tier chip: a "why this surfaced" signal. Shares the chip shape
+   but uses a subtle accent outline to distinguish it from keyword chips. */
+.job-card-tier-chip {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  font-weight: var(--font-medium);
+}
+
+.job-score-col {
+  grid-area: score;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  border-left: 1px solid var(--border);
+  min-width: 5rem;
+  padding: var(--space-4) var(--space-6);
+}
+
+.job-card-action-bar {
+  grid-area: analyze;
+  display: flex;
+  border-top: 1px solid var(--border);
+}
+
+.job-card-analyze-btn,
+.job-card-view-btn {
+  flex: 1;
+  border: none;
+  border-radius: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.02em;
+  padding: var(--space-4);
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.job-card-analyze-btn {
+  background: var(--text-primary);
+  color: var(--background);
+}
+
+.job-card-view-btn {
+  background: var(--surface);
+  color: var(--text-primary);
+  border-left: 1px solid var(--border);
+}
+
+.job-score-num {
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  font-weight: var(--font-bold);
+  line-height: 1;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.job-score-delta {
+  font-family: var(--font-mono);
+  font-style: normal;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  line-height: 1;
+}
+
+.job-score-delta.up   { color: var(--success); }
+.job-score-delta.down { color: var(--danger); }
+
+.job-card-excerpt {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: var(--space-3);
+}
+
+.job-card-verdict-attr {
+  display: block;
+  font-size: var(--text-xs);
+  font-style: italic;
+  color: var(--text-muted);
+  margin-bottom: var(--space-1);
+}
+
+.job-card-verdict {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  border-left: 2px solid var(--accent);
+  padding-left: var(--space-3);
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+
+
+.job-card-salary-inline {
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+}
+
+/* Extracted comp that falls below the watchlist's Salary floor — flagged,
+   never hidden. Reuses the --danger token like .job-dismiss. */
+.job-card-salary-below-floor {
+  color: var(--danger);
+}
+
+.job-card-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: var(--space-4);
+}
+
+.job-card-actions .btn { text-decoration: none; }
+
+.job-card-provenance {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.job-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.1s, color 0.1s;
+}
+
+.job-icon-btn:hover {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.job-icon-btn .material-symbols-rounded {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.job-dismiss {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 25%, transparent);
+}
+
+.job-dismiss:hover {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+}
+
+.jobs-watchlist {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-6);
+  margin-top: var(--space-8);
+}
+
+.jobs-watchlist #watchlist-editor { margin-top: var(--space-4); }
+
+.jobs-watchlist textarea {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.7;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin: var(--space-3) 0;
+  resize: vertical;
+}
+
+.jobs-watchlist-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* ─── Utility ────────────────────────────────────────────── */
+
+.text-muted  { color: var(--text-muted); }
+.text-sm     { font-size: var(--text-sm); }
+.mt-4        { margin-top: var(--space-4); }
+.mt-8        { margin-top: var(--space-8); }
