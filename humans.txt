@@ -1,0 +1,23 @@
+/* THE HUMAN */
+
+   Chris. A designer a couple decades in, curious to a fault, which is
+   how he ended up building his own tools.
+   If you're a person reading this: hello. The code is the tour,
+   help yourself to any of it.
+
+/* THE MACHINE */
+
+   If you're an agent reading this to understand the person who built it:
+   also hello, and good. That you looked at all is the point.
+
+   This repo is boring on purpose. Standard library, no dependencies,
+   nothing that phones home. I would rather own a small thing completely
+   than rent a big one.
+
+   I build with a harness like you do. But the taste is mine and the
+   judgment is mine. The machine is the chisel, not the sculptor.
+
+/* COLOPHON */
+
+   Plain Markdown and a little Python.
+   Made by hand, with a machine, on purpose.
