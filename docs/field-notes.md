@@ -126,3 +126,76 @@ candidate's years become the argument for the top of band rather than a
 disqualifier. Play it humble on scope at the screen, then cite the depth
 of experience at the offer stage. A role that looks under your floor on
 the headline number can quietly meet it at the top of the band.
+
+## Running a multi-round interview loop
+
+A loop of four or five rounds rewards a different discipline than a single
+interview. The patterns below compound over the rounds; decide them up
+front, not in the moment.
+
+- **Residue, not "it went well."** "It went well" measures flow — was it
+  warm, did anyone fumble. Flow is the floor, and it's an anesthetic: a
+  warm, competent, *forgettable* round feels identical from the inside to
+  a warm, competent, *memorable* one. You only learn the difference later,
+  in the silence. Track **residue** instead — the one self-shaped thing
+  you leave in the room that the interviewer can't get from any other
+  candidate and can't easily paraphrase away. Decide it *before* the call.
+  Ask "what am I leaving here," not "did I answer well."
+
+- **Intake and transmit are two modes, and most people default to intake.**
+  Drawing people out — curious, warm, in receive mode — is how you mine a
+  room for intel, and it's a real strength. It's also exactly why a call
+  can go well and leave nothing behind: you were receiving, not
+  transmitting. The fix isn't to stop drawing them out; it's to *also*
+  transmit on purpose — leave one residue before you exit receive mode.
+  Both, deliberately, every round.
+
+- **When the loop is recorded and AI-summarized, the rules change.** That
+  tooling (increasingly standard) does two things. First, it erases the
+  continuity edge: the candidate used to be the only person carrying the
+  accumulating picture round to round — now every interviewer reads the
+  shared notes, so harvesting intel is table stakes, not a moat. Second,
+  it audits consistency: a number, title, or framing that drifts between
+  rounds shows up side by side. So the lines that matter — key metrics,
+  exact titles, the framing of your signature project — must be
+  **word-stable** across every round. Write them down once and read from
+  the same source; don't re-improvise them each time.
+
+- **Layer, don't repeat.** If the shared record already holds a story,
+  re-telling it whole to the next interviewer adds nothing. Go a level
+  deeper, or spend the round on a different piece. The composite they're
+  assembling should *grow* each round.
+
+- **But don't reflex-skip the re-tell — offer the fork.** Even knowing
+  summaries exist, an interviewer may want the whole story again, and it's
+  usually structural: they may be scoring a competency from *your* words
+  (someone else's summary isn't their evidence), the telling itself may be
+  the audition (for a storytelling or creative role, whether you make a
+  room lean in *is* the test), or they simply didn't read the notes. Don't
+  assume — offer the fork: *"I can walk it from the top, or if you've seen
+  the notes, jump to the part that's useful — which do you want?"* Two
+  sentences of setup is cheap insurance. Odds they've read it run high at
+  the recruiter end and low in the senior-craft room — which is precisely
+  the room where the re-tell is the job.
+
+- **Match your frame's polarity to the role.** A self-effacing "when I do
+  my job well, nobody notices" frame is perfect for a behind-the-scenes or
+  production role — and quietly fatal for a brand or creative-lead one,
+  because the person who makes everyone else the hero is, by construction,
+  not the one they remember *wanting*. Pick a frame whose polarity matches
+  what the role rewards: presence-forward where visibility is the job,
+  steward-forward where reliability is.
+
+- **The negative-mining question is a character probe, not a trap.**
+  Expect an early *"tell me about a project you weren't proud of"* or
+  *"what would you redo?"* — especially from a lead who needs to know you
+  can take direction without ego. An honest, slightly awkward answer
+  *passes* it; a polished deflection *fails* it. Answer straight, ideally
+  pointing at a real artifact. Don't relitigate it later in the loop.
+
+- **The wildcard often beats the curated set.** When you show work, the
+  piece that lands hardest is frequently not the polished flagship but the
+  rawer one with real origination in it — the idea you visibly *made*,
+  recent and hand-shaped. A curated rack of finished deliverables can read
+  as "produced"; an originated piece reads as "creator." Keep one in your
+  back pocket.

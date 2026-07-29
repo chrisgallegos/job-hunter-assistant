@@ -58,6 +58,35 @@ research, anything you need to learn before you'd say yes)*
 
 ---
 
+## If this is a multi-round loop
+
+*Fill this once per loop, not per interview — these carry across every
+round. See `docs/field-notes.md` → "Running a multi-round interview loop"
+for the reasoning behind each band.*
+
+**LOCKED lines** — say these *identically* every round. Recorded/
+AI-summarized loops audit consistency, so a drifting number or title
+shows side by side. Write them once here; read from here, don't
+re-improvise.
+
+- *(key metric / number)*
+- *(exact titles, dates, scope claims)*
+- *(the one-line framing of your signature project)*
+
+**CARRY-IN** — intel harvested from prior rounds to walk in with next time.
+
+-
+
+**RESIDUE, per round** — the one dent to leave each specific person,
+decided *before* the call; plus the new layer this round adds and the hook
+to seed for whoever's next.
+
+| Round / who | Residue to leave | What this round ADDS (new layer, not a repeat) | Forward hook for the next interviewer |
+|---|---|---|---|
+| | | | |
+
+---
+
 ## If working with an AI collaborator
 
 Read the career narrative, JD analysis, and company research first.
