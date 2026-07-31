@@ -100,6 +100,23 @@ def get_json(url):
     return data
 
 
+def get_text(url):
+    """Fetch a URL and return the raw response body as text. Returns None
+    on any failure. Same per-host rate limiter as get_json. For adapters
+    whose board is server-rendered HTML rather than a JSON API (Jobvite),
+    parsed downstream with regex + the shared strip_html."""
+    host, lock = _throttle(url)
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            charset = resp.headers.get_content_charset() or "utf-8"
+            return resp.read().decode(charset, errors="replace")
+    except (urllib.error.URLError, TimeoutError, OSError):
+        return None
+    finally:
+        _mark_done(host, lock)
+
+
 def post_json(url, payload):
     """POST a JSON body and parse the JSON response. Returns None on any
     failure. Shares the same per-host rate limiter as get_json —
@@ -125,7 +142,7 @@ def post_json(url, payload):
 def get_sources():
     from . import (
         greenhouse, lever, ashby, bamboohr, workable, publicis,
-        workday, eightfold, smartrecruiters,
+        workday, eightfold, smartrecruiters, jobvite,
     )
     return {
         "greenhouse":     greenhouse,
@@ -137,4 +154,5 @@ def get_sources():
         "workday":        workday,
         "eightfold":      eightfold,
         "smartrecruiters": smartrecruiters,
+        "jobvite":        jobvite,
     }

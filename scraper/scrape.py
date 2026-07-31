@@ -542,6 +542,7 @@ SOURCE_COST = {
     "workday": 0,   # canonical company ATS (CXS API) — must beat aggregators
     "eightfold": 0,  # canonical company ATS (PCSX API) — must beat aggregators
     "smartrecruiters": 0,  # canonical company ATS — must beat aggregators
+    "jobvite": 0,   # canonical company careersite (server-rendered HTML) — must beat aggregators
     "remotive": 1,
     "weworkremotely": 1,
     "remoteok": 2,  # pay-to-play; deprioritize

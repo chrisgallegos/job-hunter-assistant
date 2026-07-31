@@ -246,6 +246,52 @@ tracking param — prefer `postingUrl`).
 
 ---
 
+## Jobvite (public careersite — server-rendered HTML)
+
+Jobvite (now branded "Employ") is the first adapter whose board is
+**server-rendered HTML, not a JSON API** — parsed with regex + the
+shared `strip_html`, fetched via the shared `get_text` (added alongside
+this adapter). No auth, no JS.
+
+- **List:** `https://jobs.jobvite.com/{careersite}/jobs?nl=1`. `nl=1`
+  ("no layout") is the chrome-free variant the embed iframe loads; use
+  it, not the full page. One `<table class="jv-job-list">` per category
+  under an `<h3 class="h2">` header (passed through as `department` —
+  a genuinely useful discipline signal, e.g. "Creative Services").
+- **Detail:** `/{careersite}/job/{id}?nl=1` carries a schema.org
+  `JobPosting` in an `application/ld+json` block (title, `datePosted`
+  ISO, `description` HTML, `hiringOrganization`, `employmentType`,
+  `baseSalary`). That's the clean parse path — so, same two-tier
+  pattern as Workday/SmartRecruiters, only design-hint titles get the
+  detail fetch (and therefore a real description + posted date +
+  company name); non-design rows keep list-tier title/location only.
+
+### The catch: careersite slug is not the company name (and not guessable)
+
+Many tenants embed the board as an iframe on their **own** domain and
+configure `jobs.jobvite.com/{slug}` (bare, no `/jobs`) to **302 back**
+to that domain — so you cannot confirm the slug by hitting the bare
+URL, and blind guessing fails. Get it the reliable way: `curl` the
+company's careers page and read the embed's `data-careersite="..."`
+attribute (R&R Partners = `rrpartners`).
+
+### Gotchas
+
+- **`careersite-iframe/?careersite={slug}` is a red herring.** That
+  standalone iframe endpoint rejects the slug with an `invalid=1`
+  redirect to Jobvite's support page. Only the path form
+  `/{slug}/jobs?nl=1` works.
+- **reCAPTCHA is on the APPLY flow only**, not the listing or detail
+  HTML — scanning is unaffected.
+- **`jobLocation` in the JSON-LD can be sparse** (just a country). The
+  list page's `jv-job-list-location` cell is often as good or better,
+  so the adapter takes location from the list row, not the JSON-LD.
+- **Non-design rows carry the raw slug as `company`** (no detail fetch
+  to read `hiringOrganization`) — identical to the SmartRecruiters
+  two-tier behavior. Harmless; enriched rows get the real name.
+
+---
+
 ## Server-side vs whole-board fetch
 
 Big employers have thousands of postings (Adobe ~1000, T-Mobile 2400+,
@@ -297,6 +343,7 @@ is open — verify per the method above.
 | Activision Blizzard | Eightfold | tenant `activision` is real (`activision.eightfold.ai`) but PCSX search is gated (403 "PCSX is not enabled for this user") — same as Netflix. `activisionblizzard`, `blizzard`, `king` don't resolve as separate tenants. |
 | Ubisoft | SmartRecruiters | company id is `ubisoft2`, not `ubisoft` (which returns `totalFound: 0`) — see the SmartRecruiters gotchas above. 199 postings, ~26 design-hint titles. |
 | Wise (fintech, ex-TransferWise) | SmartRecruiters | id `wise`, 368 postings — used as the second verification target for the SmartRecruiters adapter (non-gaming, confirms the adapter generalizes). |
+| R&R Partners (agency) | Jobvite | careersite slug `rrpartners`, read from the `data-careersite` attribute of the iframe embed on `rrpartners.com/careers`. 4 postings; verification target for the Jobvite adapter. |
 
 Retail company career sites also index product-category words into
 search results, so a query for "design" can return "Designer Handbags"
