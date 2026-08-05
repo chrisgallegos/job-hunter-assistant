@@ -778,6 +778,32 @@ tr:hover td { background: var(--surface); }
   opacity: 0.8;
 }
 
+/* Lane tag beside the title, italic bold. FTE stays a quiet middot label;
+   GIG is a light-blue flag (swap --gig in tokens.css to --warning for
+   orange). One element does double duty: the title label AND the flag. */
+.job-card-lane {
+  font-style: italic;
+  font-weight: var(--font-bold);
+  font-size: var(--text-xs);
+  align-self: center;
+  white-space: nowrap;
+}
+.job-card-lane--fte {
+  color: var(--text-muted);
+}
+.job-card-lane--fte::before {
+  content: "·";
+  margin-right: var(--space-1);
+  font-style: normal;
+}
+.job-card-lane--gig {
+  color: color-mix(in srgb, var(--gig) 80%, #000 20%);
+  background: color-mix(in srgb, var(--gig) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gig) 40%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-2);
+}
+
 .job-card-company {
   display: flex;
   align-items: center;

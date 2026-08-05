@@ -10,11 +10,12 @@
 
 
 def get_feeds():
-    from . import remotive, remoteok, weworkremotely, usajobs, neogov
+    from . import remotive, remoteok, weworkremotely, usajobs, neogov, hackernews
     return {
         "remotive": remotive,
         "remoteok": remoteok,
         "weworkremotely": weworkremotely,
         "usajobs": usajobs,
         "neogov": neogov,
+        "hackernews": hackernews,
     }

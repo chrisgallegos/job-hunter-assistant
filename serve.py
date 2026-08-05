@@ -17,7 +17,9 @@ Usage:
 import argparse
 import json
 import os
+import posixpath
 import sys
+import urllib.parse
 import webbrowser
 from datetime import date
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -198,20 +200,50 @@ def append_learning(today, body, reason):
         handle.write(entry)
 
 
+def read_jobs_payload():
+    """The app's job feed: the FTE sidecar (latest.json) with the gig
+    sidecar (gigs-latest.json) merged in, so both lanes render in one list
+    — each posting already carries lane='fte'|'gig' from the scraper. The
+    two files are written independently (an FTE-only or gigs-only scan
+    touches just one), so either may be absent; merge whatever exists."""
+    latest = scrape.JOBS_DIR / "latest.json"
+    gigs = scrape.JOBS_DIR / "gigs-latest.json"
+    payload = (json.loads(latest.read_text()) if latest.exists()
+               else {"generated": None, "postings": []})
+    if gigs.exists():
+        payload["postings"] = (payload.get("postings", [])
+                               + json.loads(gigs.read_text()).get("postings", []))
+    return payload
+
+
 class Handler(SimpleHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
 
+    def end_headers(self):
+        # Local single-user dev tool whose static files (app.js/css) change
+        # often — never let the browser serve a stale build. Cheap here,
+        # saves the "why isn't my edit showing?" confusion.
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
     # ── API ──────────────────────────────────────────────────
 
+    def _host_ok(self):
+        # Reject requests whose Host isn't the loopback we bound to. Without this,
+        # a malicious website can DNS-rebind to 127.0.0.1 and drive this server
+        # from the victim's browser (bypassing CORS) — chained with a file read,
+        # that exfiltrates private/ data. We only ever serve localhost.
+        name = self.headers.get("Host", "").rsplit(":", 1)[0].strip("[]").lower()
+        return name in ("localhost", "127.0.0.1", "::1")
+
     def do_GET(self):
+        if not self._host_ok():
+            return self.send_error(403, "invalid Host header")
         if self.path == "/api/jobs":
-            latest = scrape.JOBS_DIR / "latest.json"
-            if latest.exists():
-                return self.send_json(
-                    with_applied(with_verdicts(json.loads(latest.read_text()))))
-            return self.send_json({"generated": None, "postings": []})
+            return self.send_json(
+                with_applied(with_verdicts(read_jobs_payload())))
 
         if self.path == "/api/verdicts":
             if scrape.VERDICTS_FILE.exists():
@@ -228,13 +260,19 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path == "/api/tracker":
             return self.send_json(parse_tracker())
 
-        # Static files — but private/ is never served over HTTP.
-        # The API above exposes exactly what the app needs, nothing more.
-        if self.path.startswith("/private"):
+        # Static files — but private/ is never served over HTTP. Decode and
+        # normalize BEFORE checking: a raw startswith is bypassed by e.g.
+        # /%70rivate/usajobs.env (the base handler unquotes before serving),
+        # which would leak API keys. Match a "private" path segment, case-fold
+        # for the case-insensitive macOS filesystem.
+        decoded = posixpath.normpath(urllib.parse.unquote(self.path.split("?", 1)[0]))
+        if "private" in decoded.lower().split("/"):
             return self.send_error(403, "private/ is not served")
         return super().do_GET()
 
     def do_POST(self):
+        if not self._host_ok():
+            return self.send_error(403, "invalid Host header")
         length = int(self.headers.get("Content-Length", 0))
         try:
             body = json.loads(self.rfile.read(length) or b"{}")
@@ -242,19 +280,23 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_error(400, "invalid JSON")
 
         if self.path == "/api/scrape":
+            try:
+                days = int(body.get("days", 7))
+            except (TypeError, ValueError):
+                return self.send_error(400, "invalid 'days' parameter")
             log = []
             try:
                 results = scrape.scan(
-                    days=int(body.get("days", 7)),
+                    days=days,
                     rescan=bool(body.get("rescan", False)),
                     log=log.append,
                 )
             except scrape.WatchlistError as err:
                 return self.send_json({"error": str(err), "log": log}, 400)
-            latest = json.loads((scrape.JOBS_DIR / "latest.json").read_text())
-            latest["log"] = log
-            latest["new"] = len(results)
-            return self.send_json(with_applied(with_verdicts(latest)))
+            payload = read_jobs_payload()  # FTE + gig lanes merged
+            payload["log"] = log
+            payload["new"] = len(results)
+            return self.send_json(with_applied(with_verdicts(payload)))
 
         if self.path == "/api/dismiss":
             url = body.get("url", "")

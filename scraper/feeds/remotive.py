@@ -27,5 +27,9 @@ def fetch(arg=None):
             "posted": job.get("publication_date"),
             "description": job.get("description") or "",
             "department": job.get("category") or "",
+            # Remotive tags each job full_time/contract/freelance/part_time
+            # — the gig lane reads this to split contract/freelance work
+            # out of the FTE stream. Empty when the API omits it.
+            "employment": (job.get("job_type") or "").strip(),
         })
     return postings

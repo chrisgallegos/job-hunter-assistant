@@ -239,6 +239,15 @@ function escHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+// Job/apply URLs come from external boards and are untrusted. escHtml alone won't
+// stop a `javascript:` (or `data:`) href from executing on click, so only http(s)
+// may become a link; anything else is neutralized to '#'. (Same guard the markdown
+// link renderer already applies inline.)
+function safeUrl(url) {
+  const u = String(url == null ? '' : url).trim();
+  return /^https?:\/\//i.test(u) ? escHtml(u) : '#';
+}
+
 function renderWizard() {
   const container = document.getElementById('wizard-container');
   container.innerHTML = '';
@@ -535,7 +544,7 @@ function alsoOnRow(alsoOn) {
     const name = prettySource(entry.source);
     if (!name || seen.has(name)) continue;
     seen.add(name);
-    links.push(`<a href="${escHtml(entry.url)}" target="_blank" rel="noopener">${escHtml(name)}</a>`);
+    links.push(`<a href="${safeUrl(entry.url)}" target="_blank" rel="noopener">${escHtml(name)}</a>`);
   }
   if (!links.length) return '';
   return `<div class="job-card-also-on">Also on: ${links.join(' · ')}</div>`;
@@ -573,6 +582,15 @@ function appliedBadge(applied) {
   return `<span class="job-card-chip job-card-applied-badge${closed}" title="${escHtml(tip)}">✓ Applied</span>`;
 }
 
+// Lane tag beside the title: a quiet middot "FTE" for jobs, a light-blue
+// "GIG" flag for gigs. Defaults to FTE for older latest.json snapshots
+// written before the lane field existed.
+function laneLabel(lane) {
+  const l = lane === 'gig' ? 'gig' : 'fte';
+  const tip = l === 'gig' ? 'Gig / contract lane (direct lead)' : 'Full-time lane';
+  return `<span class="job-card-lane job-card-lane--${l}" title="${tip}"><em>${l.toUpperCase()}</em></span>`;
+}
+
 function renderJobs(statusMsg) {
   document.getElementById('jobs-status').textContent = statusMsg || '';
   jobsData.sort((a, b) => combinedScore(b) - combinedScore(a));
@@ -596,6 +614,7 @@ function renderJobs(statusMsg) {
         <div class="job-card-identity">
           <div class="job-card-title-row">
             <div class="job-card-title">${escHtml(j.title)}</div>
+            ${laneLabel(j.lane)}
             ${appliedBadgeHtml}
           </div>
           <div class="job-card-company">
@@ -621,7 +640,7 @@ function renderJobs(statusMsg) {
       </div>
       ${scoreCol(j)}
       <div class="job-card-action-bar">
-        <a class="job-card-view-btn" href="${escHtml(j.url)}" target="_blank" rel="noopener">View ↗</a>
+        <a class="job-card-view-btn" href="${safeUrl(j.url)}" target="_blank" rel="noopener">View ↗</a>
         <button class="job-card-analyze-btn" onclick="analyzeJob(${i})">Analyze →</button>
       </div>
     </div>

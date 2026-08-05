@@ -18,6 +18,7 @@
   --success:          #16a34a;
   --warning:          #d97706;
   --danger:           #dc2626;
+  --gig:              #0891b2;  /* gig lane: light blue, distinct from --accent */
 
   /* Typography */
   --font-sans:        system-ui, -apple-system, sans-serif;
