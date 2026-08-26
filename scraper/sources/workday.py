@@ -46,6 +46,7 @@ TENANTS = {
     "nordstrom": ("nordstrom", "wd501", "nordstrom_careers", "Nordstrom"),
     "boeing":    ("boeing", "wd1", "EXTERNAL_CAREERS", "Boeing"),
     "tmobile":   ("tmobile", "wd1", "External", "T-Mobile"),
+    "dentsu":    ("dentsuaegis", "wd3", "DAN_GLOBAL", "Dentsu"),  # Dentsu Aegis Network global board (single worldwide site — expect intl noise)
 }
 
 _DESIGN_HINT_RE = re.compile(
